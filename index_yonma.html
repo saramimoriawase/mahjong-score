@@ -504,9 +504,12 @@
       <div class="controls">
         <button id="calcBtn">🀄 計算して記録</button>
         <button id="resetBtn" class="secondary">全リセット</button>
-        <button id="downloadCsv" class="secondary">CSV出力</button>
         <button id="shareLineBtn" class="secondary">LINEで共有（累計のみ）</button>
+        <button id="downloadCsv" class="secondary">CSV出力</button>
+        <input type="file" id="uploadCsv" accept=".csv,text/csv" style="display:none;">
+        <button id="uploadCsvBtn" class="secondary">CSV読み込み</button>
       </div>
+
     </div>
 
     <!-- 履歴 -->
@@ -857,6 +860,89 @@ document.getElementById("downloadCsv").addEventListener("click", function(){
   URL.revokeObjectURL(url);
 });
 
+
+// CSV読み込み（バックアップ復元：最終結果ベース）
+document.getElementById("uploadCsvBtn").addEventListener("click", function(){
+  document.getElementById("uploadCsv").click();
+});
+
+document.getElementById("uploadCsv").addEventListener("change", function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      importCsvYonma(ev.target.result);
+      alert("CSVから履歴を復元しました。");
+    }catch(err){
+      console.error(err);
+      alert("CSVの読み込みでエラーが発生しました。フォーマットを確認してください。");
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+});
+
+function importCsvYonma(text){
+  const lines = text.trim().split(/\r?\n/);
+  if(lines.length <= 1){
+    alert("データ行がありません。");
+    return;
+  }
+
+  const header = lines[0].split(",");
+  if(header.length < 14){
+    throw new Error("ヘッダ列数が想定より少ないです。");
+  }
+
+  const names = {
+    E: document.getElementById("nameE").value || "東",
+    S: document.getElementById("nameS").value || "南",
+    W: document.getElementById("nameW").value || "西",
+    N: document.getElementById("nameN").value || "北"
+  };
+
+  history = [];
+  editingIndex = null;
+
+  for(let i = 1; i < lines.length; i++){
+    const line = lines[i].trim();
+    if(!line) continue;
+
+    const cols = line.split(",");
+    if(cols.length < 14) continue;
+
+    const pts = {
+      E: Number(cols[1]) || 0,
+      S: Number(cols[2]) || 0,
+      W: Number(cols[3]) || 0,
+      N: Number(cols[4]) || 0
+    };
+
+    const tobi = {
+      E: { win: cols[5] === "1",  lose: cols[6] === "1"  },
+      S: { win: cols[7] === "1",  lose: cols[8] === "1"  },
+      W: { win: cols[9] === "1",  lose: cols[10] === "1" },
+      N: { win: cols[11] === "1", lose: cols[12] === "1" }
+    };
+
+    const comment = cols.slice(13).join(",");
+
+    const res = {E: pts.E, S: pts.S, W: pts.W, N: pts.N};
+
+    history.push({
+      res: res,
+      pts: pts,
+      names: { ...names },
+      comment: comment,
+      tobi: tobi
+    });
+  }
+
+  updateDOM();
+}
+
 // LINE共有（累計のみ）
 document.getElementById("shareLineBtn").addEventListener("click", async function(){
   if(history.length === 0){
@@ -869,6 +955,36 @@ document.getElementById("shareLineBtn").addEventListener("click", async function
   const nameW2 = document.getElementById("nameW").value || "西";
   const nameN2 = document.getElementById("nameN").value || "北";
 
+  // 累計順位カウント（LINE共有用：四麻）
+  const rankCounts = {
+    E: {1:0,2:0,3:0,4:0},
+    S: {1:0,2:0,3:0,4:0},
+    W: {1:0,2:0,3:0,4:0},
+    N: {1:0,2:0,3:0,4:0}
+  };
+  history.forEach(function(h){
+    const arr = [
+      {w:"E", v:h.pts.E},
+      {w:"S", v:h.pts.S},
+      {w:"W", v:h.pts.W},
+      {w:"N", v:h.pts.N}
+    ];
+    arr.sort(function(a,b){ return b.v - a.v; });
+    let prevVal = null;
+    let currentRank = 1;
+    arr.forEach(function(item, idx){
+      if(prevVal !== null && item.v < prevVal){
+        currentRank = idx + 1;
+      }
+      rankCounts[item.w][currentRank] += 1;
+      prevVal = item.v;
+    });
+  });
+
+  function formatRank(rc){
+    return "1位" + (rc[1]||0) + "回、2位" + (rc[2]||0) + "回、3位" + (rc[3]||0) + "回、4位" + (rc[4]||0) + "回";
+  }
+
   const lines = [];
   lines.push("【四人麻雀 累計スコア】");
   lines.push("半荘数: " + history.length);
@@ -877,6 +993,12 @@ document.getElementById("shareLineBtn").addEventListener("click", async function
   lines.push(nameS2 + " " + fmtSigned(totals.S));
   lines.push(nameW2 + " " + fmtSigned(totals.W));
   lines.push(nameN2 + " " + fmtSigned(totals.N));
+  lines.push("");
+  lines.push("【順位内訳】");
+  lines.push(nameE2 + " : " + formatRank(rankCounts.E));
+  lines.push(nameS2 + " : " + formatRank(rankCounts.S));
+  lines.push(nameW2 + " : " + formatRank(rankCounts.W));
+  lines.push(nameN2 + " : " + formatRank(rankCounts.N));
 
   const text = lines.join("\n");
 
