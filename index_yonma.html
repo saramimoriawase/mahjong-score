@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
-  <title>四人麻雀 結果入力＋飛びスコアボード（最終結果のみ履歴・累計LINE共有・複数飛び対応）</title>
+  <title>四人麻雀 スコアボード</title>
   <style>
     :root{
       --bg-table:#0b6b3f;
@@ -378,11 +378,10 @@
     <div class="header">
       <div class="header-title">
         <span class="tile-mark">東</span>
-        <span>四人麻雀 結果＋飛びスコア（最終結果履歴・累計LINE共有・複数飛び対応）</span>
+        <span>四人麻雀 結果</span>
       </div>
       <div class="header-sub">
-        半荘ごとの「結果ポイント」だけ入力。飛び込み後がその半荘の最終結果として記録されます。<br>
-        1人が複数人を同時に飛ばした場合、飛ばした人数分だけボーナスが加算されます。
+        半荘ごとの「結果」だけ入力。
       </div>
     </div>
 
@@ -447,8 +446,8 @@
           <div class="score-label">この半荘の結果（ポイント：+/-）</div>
           <input type="number" id="resE" inputmode="numeric" placeholder="例: 25" />
           <div class="tobi-flags">
-            <label><input type="checkbox" id="tobiWinE" /> 飛ばした</label>
-            <label><input type="checkbox" id="tobiLoseE" /> 飛ばされた</label>
+            <label><input type="checkbox" id="tobiWinE" onclick="if(this.checked) document.getElementById('tobiLoseE').checked = false;" /> 飛ばした</label>
+            <label><input type="checkbox" id="tobiLoseE" onclick="if(this.checked) document.getElementById('tobiWinE').checked = false;" /> 飛ばされた</label>
           </div>
         </div>
 
@@ -460,8 +459,8 @@
           <div class="score-label">この半荘の結果（ポイント：+/-）</div>
           <input type="number" id="resS" inputmode="numeric" placeholder="例: -5" />
           <div class="tobi-flags">
-            <label><input type="checkbox" id="tobiWinS" /> 飛ばした</label>
-            <label><input type="checkbox" id="tobiLoseS" /> 飛ばされた</label>
+            <label><input type="checkbox" id="tobiWinS" onclick="if(this.checked) document.getElementById('tobiLoseS').checked = false;" /> 飛ばした</label>
+            <label><input type="checkbox" id="tobiLoseS" onclick="if(this.checked) document.getElementById('tobiWinS').checked = false;" /> 飛ばされた</label>
           </div>
         </div>
 
@@ -473,8 +472,8 @@
           <div class="score-label">この半荘の結果（ポイント：+/-）</div>
           <input type="number" id="resW" inputmode="numeric" placeholder="例: -10" />
           <div class="tobi-flags">
-            <label><input type="checkbox" id="tobiWinW" /> 飛ばした</label>
-            <label><input type="checkbox" id="tobiLoseW" /> 飛ばされた</label>
+            <label><input type="checkbox" id="tobiWinW" onclick="if(this.checked) document.getElementById('tobiLoseW').checked = false;" /> 飛ばした</label>
+            <label><input type="checkbox" id="tobiLoseW" onclick="if(this.checked) document.getElementById('tobiWinW').checked = false;" /> 飛ばされた</label>
           </div>
         </div>
 
@@ -486,8 +485,8 @@
           <div class="score-label">この半荘の結果（ポイント：+/-）</div>
           <input type="number" id="resN" inputmode="numeric" placeholder="例: -10" />
           <div class="tobi-flags">
-            <label><input type="checkbox" id="tobiWinN" /> 飛ばした</label>
-            <label><input type="checkbox" id="tobiLoseN" /> 飛ばされた</label>
+            <label><input type="checkbox" id="tobiWinN" onclick="if(this.checked) document.getElementById('tobiLoseN').checked = false;" /> 飛ばした</label>
+            <label><input type="checkbox" id="tobiLoseN" onclick="if(this.checked) document.getElementById('tobiWinN').checked = false;" /> 飛ばされた</label>
           </div>
         </div>
       </div>
