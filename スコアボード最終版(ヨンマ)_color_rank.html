@@ -1,0 +1,900 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+  <title>四人麻雀 結果入力＋飛びスコアボード（最終結果のみ履歴・累計LINE共有・複数飛び対応）</title>
+  <style>
+    :root{
+      --bg-table:#0b6b3f;
+      --bg-table-light:#14532d;
+      --bg-card:#fefcf5;
+      --accent:#b91c1c;
+      --accent-dark:#7f1d1d;
+      --text-main:#0f172a;
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,
+        'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;
+      background:radial-gradient(circle at top, #0f9d58 0, var(--bg-table) 40%, #053222 100%);
+      color:var(--text-main);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .wrap{
+      max-width:780px;
+      margin:0 auto;
+      padding:10px 10px 18px;
+      box-sizing:border-box;
+    }
+    .table-frame{
+      border-radius:18px;
+      padding:10px;
+      background:linear-gradient(135deg,var(--bg-table-light),#064e3b);
+      box-shadow:0 0 0 3px #022c22, 0 10px 25px rgba(0,0,0,0.4);
+    }
+    .header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      margin-bottom:8px;
+      color:#fefce8;
+      gap:6px;
+      flex-wrap:wrap;
+    }
+    .header-title{
+      font-size:17px;
+      font-weight:700;
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .tile-mark{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:26px;height:26px;
+      border-radius:6px;
+      background:#fef9c3;
+      border:2px solid var(--accent);
+      font-weight:800;
+      color:var(--accent);
+      box-shadow:0 2px 0 var(--accent);
+      flex-shrink:0;
+    }
+    .header-sub{
+      font-size:11px;
+      opacity:0.9;
+      line-height:1.4;
+      max-width:260px;
+    }
+    .card{
+      background:var(--bg-card);
+      border-radius:14px;
+      padding:10px;
+      box-shadow:0 3px 0 #cbd5e1;
+      margin-bottom:10px;
+      border:1px solid #e2e8f0;
+    }
+    .card-settings{
+      padding:6px 8px;
+      margin-bottom:8px;
+      box-shadow:0 2px 0 #cbd5e1;
+    }
+
+    /* 設定 */
+    .settings-grid{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      margin-bottom:4px;
+      font-size:11px;
+    }
+    .settings-item label{
+      display:block;
+      margin-bottom:2px;
+    }
+    .settings-item input{
+      width:100%;
+      padding:5px 8px;
+      font-size:12px;
+      border-radius:8px;
+      border:1px solid #cbd5e1;
+      box-sizing:border-box;
+      background:#f9fafb;
+    }
+    .settings-item input:focus{
+      outline:none;
+      border-color:#16a34a;
+      box-shadow:0 0 0 1px #16a34a33;
+      background:#fff;
+    }
+    .settings-actions{
+      display:flex;
+      justify-content:flex-end;
+      margin-top:4px;
+    }
+    .settings-actions button{
+      padding:6px 12px;
+      font-size:12px;
+      min-height:0;
+    }
+    .settings-toggle-bar{
+      display:flex;
+      justify-content:flex-start;
+      margin-bottom:6px;
+    }
+    .settings-toggle-btn{
+      background:#e5e7eb;
+      color:#111827;
+      box-shadow:none;
+      padding:6px 12px;
+      font-size:12px;
+      min-height:0;
+      border-radius:999px;
+      border:none;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    /* 合計表示 */
+    .totalScores{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:6px;
+      margin-bottom:8px;
+      font-size:14px;
+      font-weight:700;
+      color:#fefce8;
+    }
+    @media (min-width:560px){
+      .totalScores{grid-template-columns:repeat(4,1fr);}
+    }
+    .player-total{
+      padding:8px 10px;
+      border-radius:12px;
+      background:linear-gradient(90deg,#166534,#15803d);
+      box-shadow:0 2px 0 #052e16;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+    .player-total span.label{
+      font-size:11px;
+      font-weight:500;
+      opacity:0.9;
+    }
+
+    .player-total #totalE,
+    .player-total #totalS,
+    .player-total #totalW,
+    .player-total #totalN{
+      font-size:15px;
+      font-weight:700;
+    }
+    .rank-line{
+      font-size:11px;
+      margin-top:2px;
+      opacity:0.95;
+    }
+
+    /* 入力エリア */
+    .grid4{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    @media (min-width:720px){
+      .grid4{
+        display:grid;
+        grid-template-columns:repeat(4,1fr);
+      }
+    }
+    .player-box-title{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:4px;
+      font-size:13px;
+    }
+    .wind-tag{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:22px;height:22px;
+      border-radius:999px;
+      background:#fee2e2;
+      border:1px solid var(--accent);
+      font-size:11px;
+      font-weight:700;
+      color:var(--accent);
+    }
+    input[type=number], input[type=text]{
+      width:100%;
+      padding:9px 10px;
+      border-radius:10px;
+      border:1px solid #cbd5e1;
+      box-sizing:border-box;
+      font-size:14px;
+      background:#f9fafb;
+    }
+    input[type=number]:focus, input[type=text]:focus{
+      outline:none;
+      border-color:#16a34a;
+      box-shadow:0 0 0 1px #16a34a33;
+      background:#ffffff;
+    }
+    .score-label{
+      font-size:11px;
+      text-align:left;
+      color:#4b5563;
+      margin:4px 0 3px;
+    }
+    .tobi-flags{
+      margin-top:4px;
+      font-size:11px;
+      color:#374151;
+      display:flex;
+      flex-direction:row;
+      flex-wrap:wrap;
+      gap:4px 10px;
+    }
+    .tobi-flags label{
+      display:flex;
+      align-items:center;
+      gap:3px;
+    }
+    .tobi-flags input[type=checkbox]{
+      width:16px;
+      height:16px;
+    }
+
+    /* コメント＆ボタン */
+    .comment-input{
+      width:100%;
+      padding:9px 10px;
+      border-radius:10px;
+      border:1px solid #cbd5e1;
+      background:#f9fafb;
+      font-size:13px;
+      box-sizing:border-box;
+    }
+    .comment-input:focus{
+      outline:none;
+      border-color:#16a34a;
+      box-shadow:0 0 0 1px #16a34a33;
+      background:#fff;
+    }
+    .controls{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:10px;
+    }
+    @media (min-width:520px){
+      .controls{
+        flex-direction:row;
+        flex-wrap:wrap;
+      }
+    }
+    button{
+      background:var(--accent);
+      color:#fff;
+      padding:10px 16px;
+      border-radius:999px;
+      border:none;
+      cursor:pointer;
+      font-size:14px;
+      font-weight:600;
+      box-shadow:0 3px 0 var(--accent-dark);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
+      min-height:40px;
+    }
+    button.secondary{
+      background:#4b5563;
+      box-shadow:0 3px 0 #111827;
+    }
+    button:active{
+      transform:translateY(1px);
+      box-shadow:0 1px 0 rgba(0,0,0,0.4);
+    }
+
+    /* 履歴 */
+    .history{
+      max-height:320px;
+      overflow:auto;
+      padding:6px;
+      background:#f9fafb;
+      border-radius:10px;
+      border:1px solid #e2e8f0;
+      font-size:12px;
+      -webkit-overflow-scrolling:touch;
+    }
+    .row{
+      padding:8px;
+      border-radius:8px;
+      background:#fefce8;
+      margin-bottom:8px;
+      border:1px solid #e5e7eb;
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      align-items:flex-start;
+    }
+    .row-main{
+      flex:1;
+    }
+    .row-title{
+      font-weight:700;
+      font-size:13px;
+      margin-bottom:3px;
+    }
+    .row-line{
+      margin-top:2px;
+      line-height:1.4;
+    }
+    .row-comment{
+      font-size:11px;
+      color:#4b5563;
+      margin-top:3px;
+    }
+    .row-buttons{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      flex-shrink:0;
+    }
+    .row-buttons button{
+      padding:4px 10px;
+      font-size:11px;
+      box-shadow:none;
+      background:#e5e7eb;
+      color:#111827;
+      min-height:0;
+    }
+    .row-buttons button:hover{
+      background:#d4d4d8;
+    }
+    @media (max-width:420px){
+      .row{
+        flex-direction:column;
+      }
+      .row-buttons{
+        flex-direction:row;
+        justify-content:flex-end;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="table-frame">
+    <div class="header">
+      <div class="header-title">
+        <span class="tile-mark">東</span>
+        <span>四人麻雀 結果＋飛びスコア（最終結果履歴・累計LINE共有・複数飛び対応）</span>
+      </div>
+      <div class="header-sub">
+        半荘ごとの「結果ポイント」だけ入力。飛び込み後がその半荘の最終結果として記録されます。<br>
+        1人が複数人を同時に飛ばした場合、飛ばした人数分だけボーナスが加算されます。
+      </div>
+    </div>
+
+    <!-- 設定トグル -->
+    <div class="settings-toggle-bar">
+      <button id="toggleSettingsBtn" class="settings-toggle-btn">飛び設定 ▼</button>
+    </div>
+
+    <!-- 設定エリア（折りたたみ） -->
+    <div class="card card-settings" id="settingsPanel" style="display:none;">
+      <div class="settings-grid">
+        <div class="settings-item">
+          <label>飛ばしたボーナス（1人飛ばすごと）</label>
+          <input type="number" id="tobiWinInput" value="10" />
+        </div>
+        <div class="settings-item">
+          <label>飛ばされたペナルティ（1人ぶん）</label>
+          <input type="number" id="tobiLoseInput" value="-10" />
+        </div>
+        <div class="settings-item">
+          <label style="margin-bottom:0;">注意</label>
+          <span style="font-size:10px;color:#6b7280;">結果4人の合計は0にしてください（飛びは自動加算／複数飛び時は人数分加算）</span>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button id="applySettingsBtn">設定を適用</button>
+      </div>
+    </div>
+
+    <!-- 合計表示 -->
+    <div class="totalScores">
+      <div class="player-total">
+        <span class="label">累計ポイント（最終結果ベース）</span>
+        <div id="totalE">東: 0</div>
+        <div class="rank-line" id="rankE">順位: 1位0回 / 2位0回 / 3位0回 / 4位0回</div>
+      </div>
+      <div class="player-total">
+        <span class="label">&nbsp;</span>
+        <div id="totalS">南: 0</div>
+        <div class="rank-line" id="rankS">順位: 1位0回 / 2位0回 / 3位0回 / 4位0回</div>
+      </div>
+      <div class="player-total">
+        <span class="label">&nbsp;</span>
+        <div id="totalW">西: 0</div>
+        <div class="rank-line" id="rankW">順位: 1位0回 / 2位0回 / 3位0回 / 4位0回</div>
+      </div>
+      <div class="player-total">
+        <span class="label">&nbsp;</span>
+        <div id="totalN">北: 0</div>
+        <div class="rank-line" id="rankN">順位: 1位0回 / 2位0回 / 3位0回 / 4位0回</div>
+      </div>
+    </div>
+
+    <!-- 入力エリア -->
+    <div class="card">
+      <div class="grid4">
+        <div>
+          <div class="player-box-title">
+            <span><span class="wind-tag">東</span></span>
+          </div>
+          <input type="text" id="nameE" placeholder="東の名前" value="東" />
+          <div class="score-label">この半荘の結果（ポイント：+/-）</div>
+          <input type="number" id="resE" inputmode="numeric" placeholder="例: 25" />
+          <div class="tobi-flags">
+            <label><input type="checkbox" id="tobiWinE" /> 飛ばした</label>
+            <label><input type="checkbox" id="tobiLoseE" /> 飛ばされた</label>
+          </div>
+        </div>
+
+        <div>
+          <div class="player-box-title">
+            <span><span class="wind-tag">南</span></span>
+          </div>
+          <input type="text" id="nameS" placeholder="南の名前" value="南" />
+          <div class="score-label">この半荘の結果（ポイント：+/-）</div>
+          <input type="number" id="resS" inputmode="numeric" placeholder="例: -5" />
+          <div class="tobi-flags">
+            <label><input type="checkbox" id="tobiWinS" /> 飛ばした</label>
+            <label><input type="checkbox" id="tobiLoseS" /> 飛ばされた</label>
+          </div>
+        </div>
+
+        <div>
+          <div class="player-box-title">
+            <span><span class="wind-tag">西</span></span>
+          </div>
+          <input type="text" id="nameW" placeholder="西の名前" value="西" />
+          <div class="score-label">この半荘の結果（ポイント：+/-）</div>
+          <input type="number" id="resW" inputmode="numeric" placeholder="例: -10" />
+          <div class="tobi-flags">
+            <label><input type="checkbox" id="tobiWinW" /> 飛ばした</label>
+            <label><input type="checkbox" id="tobiLoseW" /> 飛ばされた</label>
+          </div>
+        </div>
+
+        <div>
+          <div class="player-box-title">
+            <span><span class="wind-tag">北</span></span>
+          </div>
+          <input type="text" id="nameN" placeholder="北の名前" value="北" />
+          <div class="score-label">この半荘の結果（ポイント：+/-）</div>
+          <input type="number" id="resN" inputmode="numeric" placeholder="例: -10" />
+          <div class="tobi-flags">
+            <label><input type="checkbox" id="tobiWinN" /> 飛ばした</label>
+            <label><input type="checkbox" id="tobiLoseN" /> 飛ばされた</label>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px">
+        <input
+          type="text"
+          id="comment"
+          class="comment-input"
+          placeholder="コメント（例：箱下・親倍ツモ・トリプル飛びなど）"
+        />
+      </div>
+
+      <div class="controls">
+        <button id="calcBtn">🀄 計算して記録</button>
+        <button id="resetBtn" class="secondary">全リセット</button>
+        <button id="downloadCsv" class="secondary">CSV出力</button>
+        <button id="shareLineBtn" class="secondary">LINEで共有（累計のみ）</button>
+      </div>
+    </div>
+
+    <!-- 履歴 -->
+    <div class="card">
+      <h3 style="margin:0 0 6px;font-size:14px;">履歴（最終結果のみ・複数飛び対応）</h3>
+      <div class="history" id="historyList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 設定トグル
+document.getElementById("toggleSettingsBtn").addEventListener("click", function(){
+  var p = document.getElementById("settingsPanel");
+  var isHidden = p.style.display === "none" || p.style.display === "";
+  p.style.display = isHidden ? "block" : "none";
+  this.textContent = isHidden ? "飛び設定 ▲" : "飛び設定 ▼";
+});
+
+// 設定（飛びのみ可変）
+let settings = {
+  tobiWin: 10,
+  tobiLose: -10
+};
+
+// history: {res:{E,S,W,N}, pts:{E,S,W,N}, names, comment, tobi}
+let history = [];
+let editingIndex = null;
+
+function computeTotals(){
+  const total = {E:0,S:0,W:0,N:0};
+  history.forEach(function(h){
+    total.E += h.pts.E;
+    total.S += h.pts.S;
+    total.W += h.pts.W;
+    total.N += h.pts.N;
+  });
+  return total;
+}
+
+function fmtSigned(n){
+  if(n > 0) return "+" + n;
+  return "" + n;
+}
+
+function describeTobi(tobi, names){
+  var parts = [];
+  ["E","S","W","N"].forEach(function(w){
+    var flag = tobi[w];
+    if(!flag) return;
+    if(flag.win){
+      parts.push(names[w] + " 飛ばし");
+    }
+    if(flag.lose){
+      parts.push(names[w] + " 飛ばされた");
+    }
+  });
+  if(parts.length === 0) return "";
+  return parts.join(" / ");
+}
+
+function updateDOM(){
+  const totals = computeTotals();
+
+  const nameE = document.getElementById("nameE").value || "東";
+  const nameS = document.getElementById("nameS").value || "南";
+  const nameW = document.getElementById("nameW").value || "西";
+  const nameN = document.getElementById("nameN").value || "北";
+
+  document.getElementById("totalE").textContent = nameE + ": " + totals.E;
+  document.getElementById("totalS").textContent = nameS + ": " + totals.S;
+  document.getElementById("totalW").textContent = nameW + ": " + totals.W;
+  document.getElementById("totalN").textContent = nameN + ": " + totals.N;
+
+  // 累計ポイントの色分け
+  ["E","S","W","N"].forEach(function(w){
+    const el = document.getElementById("total"+w);
+    if(!el) return;
+    const v = totals[w];
+    if(v > 0) el.style.color = "#007bff";
+    else if(v < 0) el.style.color = "#ff3333";
+    else el.style.color = "#000000";
+  });
+
+  // 累計順位カウント（四麻）
+  const rankCounts = {
+    E: {1:0,2:0,3:0,4:0},
+    S: {1:0,2:0,3:0,4:0},
+    W: {1:0,2:0,3:0,4:0},
+    N: {1:0,2:0,3:0,4:0}
+  };
+  history.forEach(function(h){
+    const arr = [
+      {w:"E", v:h.pts.E},
+      {w:"S", v:h.pts.S},
+      {w:"W", v:h.pts.W},
+      {w:"N", v:h.pts.N}
+    ];
+    arr.sort(function(a,b){ return b.v - a.v; });
+    let prevVal = null;
+    let currentRank = 1;
+    arr.forEach(function(item, idx){
+      if(prevVal !== null && item.v < prevVal){
+        currentRank = idx + 1;
+      }
+      rankCounts[item.w][currentRank] += 1;
+      prevVal = item.v;
+    });
+  });
+  if(document.getElementById("rankE")){
+    const rc = rankCounts.E;
+    document.getElementById("rankE").textContent =
+      "順位: 1位" + (rc[1]||0) + "回 / 2位" + (rc[2]||0) + "回 / 3位" + (rc[3]||0) + "回 / 4位" + (rc[4]||0) + "回";
+  }
+  if(document.getElementById("rankS")){
+    const rc = rankCounts.S;
+    document.getElementById("rankS").textContent =
+      "順位: 1位" + (rc[1]||0) + "回 / 2位" + (rc[2]||0) + "回 / 3位" + (rc[3]||0) + "回 / 4位" + (rc[4]||0) + "回";
+  }
+  if(document.getElementById("rankW")){
+    const rc = rankCounts.W;
+    document.getElementById("rankW").textContent =
+      "順位: 1位" + (rc[1]||0) + "回 / 2位" + (rc[2]||0) + "回 / 3位" + (rc[3]||0) + "回 / 4位" + (rc[4]||0) + "回";
+  }
+  if(document.getElementById("rankN")){
+    const rc = rankCounts.N;
+    document.getElementById("rankN").textContent =
+      "順位: 1位" + (rc[1]||0) + "回 / 2位" + (rc[2]||0) + "回 / 3位" + (rc[3]||0) + "回 / 4位" + (rc[4]||0) + "回";
+  }
+
+  const historyList = document.getElementById("historyList");
+  historyList.innerHTML = "";
+
+  history.forEach(function(h, idx){
+    const no = idx + 1;
+    const div = document.createElement("div");
+    div.className = "row";
+
+    const lineFinal =
+      h.names.E + " " + fmtSigned(h.pts.E) + " / " +
+      h.names.S + " " + fmtSigned(h.pts.S) + " / " +
+      h.names.W + " " + fmtSigned(h.pts.W) + " / " +
+      h.names.N + " " + fmtSigned(h.pts.N);
+
+    const tobiText = describeTobi(h.tobi, h.names);
+
+    const main = document.createElement("div");
+    main.className = "row-main";
+    let html =
+      '<div class="row-title">第 ' + no + ' 半荘</div>' +
+      '<div class="row-line">[最終結果] ' + lineFinal + '</div>';
+    if(tobiText){
+      html += '<div class="row-line">[飛び] ' + tobiText + '</div>';
+    }
+    if(h.comment){
+      html += '<div class="row-comment">※ ' + h.comment + '</div>';
+    }
+    main.innerHTML = html;
+
+    const btns = document.createElement("div");
+    btns.className = "row-buttons";
+
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "編集";
+    editBtn.onclick = function(){ startEdit(idx); };
+
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "削除";
+    delBtn.onclick = function(){ deleteHand(idx); };
+
+    btns.appendChild(editBtn);
+    btns.appendChild(delBtn);
+
+    div.appendChild(main);
+    div.appendChild(btns);
+    historyList.appendChild(div);
+  });
+
+  document.getElementById("calcBtn").textContent =
+    editingIndex === null ? "🀄 計算して記録" : "✔ 修正を反映";
+}
+
+function clearInputArea(){
+  document.getElementById("resE").value = "";
+  document.getElementById("resS").value = "";
+  document.getElementById("resW").value = "";
+  document.getElementById("resN").value = "";
+  document.getElementById("comment").value = "";
+  document.getElementById("tobiWinE").checked = false;
+  document.getElementById("tobiLoseE").checked = false;
+  document.getElementById("tobiWinS").checked = false;
+  document.getElementById("tobiLoseS").checked = false;
+  document.getElementById("tobiWinW").checked = false;
+  document.getElementById("tobiLoseW").checked = false;
+  document.getElementById("tobiWinN").checked = false;
+  document.getElementById("tobiLoseN").checked = false;
+}
+
+// 設定ボタン
+document.getElementById("applySettingsBtn").addEventListener("click", function(){
+  const tWin = Number(document.getElementById("tobiWinInput").value) || 0;
+  const tLose = Number(document.getElementById("tobiLoseInput").value) || 0;
+  settings.tobiWin = tWin;
+  settings.tobiLose = tLose;
+  alert("設定を適用しました");
+});
+
+// 計算して記録 / 修正反映
+document.getElementById("calcBtn").addEventListener("click", function(){
+  const res = {
+    E: Number(document.getElementById("resE").value) || 0,
+    S: Number(document.getElementById("resS").value) || 0,
+    W: Number(document.getElementById("resW").value) || 0,
+    N: Number(document.getElementById("resN").value) || 0
+  };
+
+  const names = {
+    E: document.getElementById("nameE").value || "東",
+    S: document.getElementById("nameS").value || "南",
+    W: document.getElementById("nameW").value || "西",
+    N: document.getElementById("nameN").value || "北"
+  };
+
+  if(res.E === 0 && res.S === 0 && res.W === 0 && res.N === 0){
+    alert("この半荘の結果ポイントを入力してください。");
+    return;
+  }
+
+  const sum = res.E + res.S + res.W + res.N;
+  if(sum !== 0){
+    alert("結果の合計が0になっていません。飛びポイントは自動で加算されるので、結果部分だけで合計0にしてください。");
+    return;
+  }
+
+  const tobi = {
+    E: {
+      win:  document.getElementById("tobiWinE").checked,
+      lose: document.getElementById("tobiLoseE").checked
+    },
+    S: {
+      win:  document.getElementById("tobiWinS").checked,
+      lose: document.getElementById("tobiLoseS").checked
+    },
+    W: {
+      win:  document.getElementById("tobiWinW").checked,
+      lose: document.getElementById("tobiLoseW").checked
+    },
+    N: {
+      win:  document.getElementById("tobiWinN").checked,
+      lose: document.getElementById("tobiLoseN").checked
+    }
+  };
+
+  // 飛び込み後ポイント（= 最終結果）
+  const pts = {E:res.E, S:res.S, W:res.W, N:res.N};
+
+  // 「飛ばされた」人数をカウント（1人が複数人同時に飛ばした場合などに対応）
+  const losers = ["E","S","W","N"].filter(function(w){ return tobi[w].lose; });
+  const losersCount = losers.length;
+
+  ["E","S","W","N"].forEach(function(w){
+    var flag = tobi[w];
+    if(!flag) return;
+    // 飛ばした人には「飛ばした人数 × ボーナス」を加算
+    if(flag.win && losersCount > 0){
+      pts[w] += settings.tobiWin * losersCount;
+    }
+    // 飛ばされた人には1人分のペナルティをそれぞれ加算
+    if(flag.lose){
+      pts[w] += settings.tobiLose;
+    }
+  });
+
+  const comment = document.getElementById("comment").value;
+  const entry = { res: res, pts: pts, names: names, comment: comment, tobi: tobi };
+
+  if(editingIndex === null){
+    history.push(entry);
+  }else{
+    history[editingIndex] = entry;
+    editingIndex = null;
+  }
+
+  clearInputArea();
+  updateDOM();
+});
+
+// 編集開始
+function startEdit(index){
+  const h = history[index];
+  editingIndex = index;
+
+  document.getElementById("resE").value = h.res.E;
+  document.getElementById("resS").value = h.res.S;
+  document.getElementById("resW").value = h.res.W;
+  document.getElementById("resN").value = h.res.N;
+  document.getElementById("comment").value = h.comment || "";
+
+  document.getElementById("tobiWinE").checked = !!h.tobi.E.win;
+  document.getElementById("tobiLoseE").checked = !!h.tobi.E.lose;
+  document.getElementById("tobiWinS").checked = !!h.tobi.S.win;
+  document.getElementById("tobiLoseS").checked = !!h.tobi.S.lose;
+  document.getElementById("tobiWinW").checked = !!h.tobi.W.win;
+  document.getElementById("tobiLoseW").checked = !!h.tobi.W.lose;
+  document.getElementById("tobiWinN").checked = !!h.tobi.N.win;
+  document.getElementById("tobiLoseN").checked = !!h.tobi.N.lose;
+
+  updateDOM();
+}
+
+// 削除
+function deleteHand(index){
+  if(!confirm("この半荘を削除しますか？")) return;
+  history.splice(index,1);
+  editingIndex = null;
+  updateDOM();
+}
+
+// 全リセット
+document.getElementById("resetBtn").addEventListener("click", function(){
+  if(!confirm("全ての履歴と合計をリセットしますか？")) return;
+  history = [];
+  editingIndex = null;
+  clearInputArea();
+  updateDOM();
+});
+
+// CSV出力（最終結果ベース）
+document.getElementById("downloadCsv").addEventListener("click", function(){
+  let csv = "半荘,東最終結果,南最終結果,西最終結果,北最終結果,東飛ばし,東被飛ばし,南飛ばし,南被飛ばし,西飛ばし,西被飛ばし,北飛ばし,北被飛ばし,コメント\n";
+  history.forEach(function(h,i){
+    const safeComment = (h.comment || "").replace(/,/g," ");
+    csv +=
+      (i+1) + "," +
+      h.pts.E + "," + h.pts.S + "," + h.pts.W + "," + h.pts.N + "," +
+      (h.tobi.E.win ? 1 : 0) + "," + (h.tobi.E.lose ? 1 : 0) + "," +
+      (h.tobi.S.win ? 1 : 0) + "," + (h.tobi.S.lose ? 1 : 0) + "," +
+      (h.tobi.W.win ? 1 : 0) + "," + (h.tobi.W.lose ? 1 : 0) + "," +
+      (h.tobi.N.win ? 1 : 0) + "," + (h.tobi.N.lose ? 1 : 0) + "," +
+      safeComment + "\n";
+  });
+  const blob = new Blob([csv], {type:"text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "yonma_result_tobi_final_history_multitobi.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// LINE共有（累計のみ）
+document.getElementById("shareLineBtn").addEventListener("click", async function(){
+  if(history.length === 0){
+    alert("まずは1半荘以上の結果を記録してください。");
+    return;
+  }
+  const totals = computeTotals();
+  const nameE2 = document.getElementById("nameE").value || "東";
+  const nameS2 = document.getElementById("nameS").value || "南";
+  const nameW2 = document.getElementById("nameW").value || "西";
+  const nameN2 = document.getElementById("nameN").value || "北";
+
+  const lines = [];
+  lines.push("【四人麻雀 累計スコア】");
+  lines.push("半荘数: " + history.length);
+  lines.push("");
+  lines.push(nameE2 + " " + fmtSigned(totals.E));
+  lines.push(nameS2 + " " + fmtSigned(totals.S));
+  lines.push(nameW2 + " " + fmtSigned(totals.W));
+  lines.push(nameN2 + " " + fmtSigned(totals.N));
+
+  const text = lines.join("\n");
+
+  if (navigator.share) {
+    try{
+      await navigator.share({ text });
+      return;
+    }catch(e){
+      console.log(e);
+    }
+  }
+
+  const encoded = encodeURIComponent(text);
+  const url = "https://line.me/R/msg/text/?" + encoded;
+  window.open(url, "_blank");
+});
+
+updateDOM();
+</script>
+</body>
+</html>
