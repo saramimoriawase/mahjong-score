@@ -438,12 +438,11 @@
   <div class="table-frame">
     <div class="header">
       <div class="header-title">
-        <span class="tile-mark">東</span>
+        <span class="tile-mark">四</span>
         <span>"四人麻雀"スコアボード</span>
       </div>
       <div class="header-sub">
-        半荘ごとの「結果」だけ入力。
-      </div>
+        半荘ごとの「結果ポイント」だけ入力。
     </div>
 
     <!-- 設定トグル -->
@@ -574,8 +573,6 @@
       <h3 style="margin:0 0 6px;font-size:14px;">履歴（最終結果のみ・複数飛び対応）</h3>
       <div class="history" id="historyList"></div>
     </div>
-  </div>
-</div>
 
     <!-- グラフモーダル -->
     <div id="graphModal" class="graph-modal">
@@ -591,6 +588,8 @@
       </div>
     </div>
 
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -612,7 +611,6 @@ let settings = {
 // history: {res:{E,S,W,N}, pts:{E,S,W,N}, names, comment, tobi}
 let history = [];
 let editingIndex = null;
-
 function formatTimestampJP(dt){
   function pad(n){ return (n < 10 ? "0" : "") + n; }
   return dt.getFullYear() + "/" +
@@ -1198,11 +1196,11 @@ function openGraphModalYonma(){
           title: {
             display: true,
             text: "累計ポイント"
-  },
-  ticks: {
-    stepSize: 10
-  }
-}
+          },
+          ticks: {
+            stepSize: 10
+          }
+        }
       }
     }
   });
