@@ -612,6 +612,33 @@ let settings = {
 // history: {res:{E,S,W,N}, pts:{E,S,W,N}, names, comment, tobi}
 let history = [];
 let editingIndex = null;
+
+// === localStorage による履歴保存・復元（ヨンマ） ===
+const STORAGE_KEY_YONMA_HISTORY = "yonma_history_v1";
+
+function saveHistoryYonma(){
+  try{
+    localStorage.setItem(STORAGE_KEY_YONMA_HISTORY, JSON.stringify(history));
+  }catch(e){
+    console.error("Yonma history save error:", e);
+  }
+}
+
+window.addEventListener("load", function(){
+  try{
+    const saved = localStorage.getItem(STORAGE_KEY_YONMA_HISTORY);
+    if(saved){
+      const parsed = JSON.parse(saved);
+      if(Array.isArray(parsed)){
+        history = parsed;
+      }
+    }
+  }catch(e){
+    console.error("Yonma history load error:", e);
+  }
+  updateDOM();
+});
+// === localStorage ここまで ===
 function formatTimestampJP(dt){
   function pad(n){ return (n < 10 ? "0" : "") + n; }
   return dt.getFullYear() + "/" +
@@ -878,6 +905,7 @@ document.getElementById("calcBtn").addEventListener("click", function(){
     editingIndex = null;
   }
 
+  saveHistoryYonma();
   clearInputArea();
   updateDOM();
 });
@@ -910,6 +938,7 @@ function deleteHand(index){
   if(!confirm("この半荘を削除しますか？")) return;
   history.splice(index,1);
   editingIndex = null;
+  saveHistoryYonma();
   updateDOM();
 }
 
@@ -919,6 +948,7 @@ document.getElementById("resetBtn").addEventListener("click", function(){
   history = [];
   editingIndex = null;
   clearInputArea();
+  saveHistoryYonma();
   updateDOM();
 });
 
