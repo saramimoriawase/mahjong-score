@@ -618,6 +618,35 @@ window.addEventListener("load", function(){
   }
   updateDOM();
 });
+
+// ===== プレイヤー名保存（サンマ） =====
+const STORAGE_KEY_SANMA_NAMES = "sanma_names_v1";
+
+function saveNamesSanma(){
+  const names = {
+    E: document.getElementById("nameE").value,
+    S: document.getElementById("nameS").value,
+    W: document.getElementById("nameW").value
+  };
+  localStorage.setItem(STORAGE_KEY_SANMA_NAMES, JSON.stringify(names));
+}
+
+window.addEventListener("load", function(){
+  const savedNames = localStorage.getItem(STORAGE_KEY_SANMA_NAMES);
+  if(savedNames){
+    try{
+      const parsed = JSON.parse(savedNames);
+      document.getElementById("nameE").value = parsed.E || "";
+      document.getElementById("nameS").value = parsed.S || "";
+      document.getElementById("nameW").value = parsed.W || "";
+    }catch(e){ console.error(e); }
+  }
+});
+
+["nameE","nameS","nameW"].forEach(id=>{
+  document.getElementById(id).addEventListener("change", saveNamesSanma);
+});
+// ===== プレイヤー名保存ここまで =====
 // === localStorage ここまで ===
 function formatTimestampJP(dt){
   function pad(n){ return (n < 10 ? "0" : "") + n; }
