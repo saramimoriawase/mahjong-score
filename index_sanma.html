@@ -592,32 +592,33 @@ let settings = {
 // history: {res:{E,S,W}, pts:{E,S,W}, names, comment, tobi}
 let history = [];
 let editingIndex = null;
-  // ローカル保存用キー
+
+// === localStorage による履歴保存・復元（サンマ） ===
 const STORAGE_KEY_SANMA_HISTORY = "sanma_history_v1";
 
-// 履歴を localStorage に保存
 function saveHistorySanma(){
   try{
     localStorage.setItem(STORAGE_KEY_SANMA_HISTORY, JSON.stringify(history));
   }catch(e){
-    console.error("保存に失敗:", e);
+    console.error("Sanma history save error:", e);
   }
 }
 
-// 画面読み込み時に履歴を復元
 window.addEventListener("load", function(){
   try{
     const saved = localStorage.getItem(STORAGE_KEY_SANMA_HISTORY);
     if(saved){
-      history = JSON.parse(saved) || [];
+      const parsed = JSON.parse(saved);
+      if(Array.isArray(parsed)){
+        history = parsed;
+      }
     }
   }catch(e){
-    console.error("読み込みに失敗:", e);
-    history = [];
+    console.error("Sanma history load error:", e);
   }
   updateDOM();
 });
-
+// === localStorage ここまで ===
 function formatTimestampJP(dt){
   function pad(n){ return (n < 10 ? "0" : "") + n; }
   return dt.getFullYear() + "/" +
@@ -864,6 +865,7 @@ document.getElementById("calcBtn").addEventListener("click", function(){
     editingIndex = null;
   }
 
+  saveHistorySanma();
   clearInputArea();
   updateDOM();
 });
@@ -893,6 +895,7 @@ function deleteHand(index){
   if(!confirm("この半荘を削除しますか？")) return;
   history.splice(index,1);
   editingIndex = null;
+  saveHistorySanma();
   updateDOM();
 }
 
@@ -902,6 +905,7 @@ document.getElementById("resetBtn").addEventListener("click", function(){
   history = [];
   editingIndex = null;
   clearInputArea();
+  saveHistorySanma();
   updateDOM();
 });
 
