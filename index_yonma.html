@@ -638,6 +638,37 @@ window.addEventListener("load", function(){
   }
   updateDOM();
 });
+
+// ===== プレイヤー名保存（ヨンマ） =====
+const STORAGE_KEY_YONMA_NAMES = "yonma_names_v1";
+
+function saveNamesYonma(){
+  const names = {
+    E: document.getElementById("nameE").value,
+    S: document.getElementById("nameS").value,
+    W: document.getElementById("nameW").value,
+    N: document.getElementById("nameN").value
+  };
+  localStorage.setItem(STORAGE_KEY_YONMA_NAMES, JSON.stringify(names));
+}
+
+window.addEventListener("load", function(){
+  const savedNames = localStorage.getItem(STORAGE_KEY_YONMA_NAMES);
+  if(savedNames){
+    try{
+      const parsed = JSON.parse(savedNames);
+      document.getElementById("nameE").value = parsed.E || "";
+      document.getElementById("nameS").value = parsed.S || "";
+      document.getElementById("nameW").value = parsed.W || "";
+      document.getElementById("nameN").value = parsed.N || "";
+    }catch(e){ console.error(e); }
+  }
+});
+
+["nameE","nameS","nameW","nameN"].forEach(id=>{
+  document.getElementById(id).addEventListener("change", saveNamesYonma);
+});
+// ===== プレイヤー名保存ここまで =====
 // === localStorage ここまで ===
 function formatTimestampJP(dt){
   function pad(n){ return (n < 10 ? "0" : "") + n; }
