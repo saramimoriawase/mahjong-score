@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
-  <title>三人麻雀 結果入力＋飛びスコアボード（スマホ向け・A/LINE共有：累計のみ・最終結果のみ履歴・複数飛び対応）</title>
+  <title>"三人麻雀"スコアボード</title>
   <style>
     :root{
       --bg-table:#0b6b3f;
@@ -203,7 +203,9 @@
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      width:22px;height:22px;
+      min-width:72px;
+      height:26px;
+      padding:0 8px;
       border-radius:999px;
       background:#fee2e2;
       border:1px solid var(--accent);
@@ -367,6 +369,65 @@
         justify-content:flex-end;
       }
     }
+
+    /* グラフ用モーダル */
+    .graph-modal{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:50;
+      padding:10px;
+      box-sizing:border-box;
+    }
+    .graph-modal-content{
+      background:#fefcf5;
+      border-radius:14px;
+      padding:10px 12px 14px;
+      max-width:720px;
+      width:100%;
+      box-shadow:0 10px 25px rgba(0,0,0,0.45);
+      border:1px solid #e2e8f0;
+    }
+    .graph-modal-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:4px;
+      font-size:14px;
+      font-weight:700;
+      color:#0f172a;
+    }
+    .graph-modal-sub{
+      font-size:11px;
+      color:#6b7280;
+      margin-bottom:6px;
+    }
+    .graph-close-btn{
+      background:transparent;
+      border:none;
+      color:#6b7280;
+      font-size:20px;
+      line-height:1;
+      padding:0 4px;
+      box-shadow:none;
+      cursor:pointer;
+    }
+    .graph-close-btn:active{
+      transform:none;
+      box-shadow:none;
+    }
+    .graph-canvas-wrap{
+      width:100%;
+      max-height:360px;
+    }
+    .graph-canvas-wrap canvas{
+      width:100% !important;
+      height:320px !important;
+    }
+
   </style>
 </head>
 <body>
@@ -375,11 +436,10 @@
     <div class="header">
       <div class="header-title">
         <span class="tile-mark">三</span>
-        <span>bb三人麻雀 結果＋飛びスコア（最終結果のみ履歴・累計LINE共有・複数飛び対応）</span>
+        <span>"三人麻雀"スコアボード</span>
       </div>
       <div class="header-sub">
-        半荘ごとの「結果ポイント」だけ入力。飛び込み後がその半荘の最終結果として記録されます。
-        1人が2人同時に飛ばした場合は、飛ばした人に飛びボーナスが2人分加算されます。
+        半荘ごとの「結果」だけ入力。
       </div>
     </div>
 
@@ -412,17 +472,14 @@
     <!-- 合計表示 -->
     <div class="totalScores">
       <div class="player-total">
-        <span class="label">累計ポイント（最終結果ベース）</span>
         <div id="totalE">東: 0</div>
         <div class="rank-line" id="rankE">順位: 1位0回 / 2位0回 / 3位0回</div>
       </div>
       <div class="player-total">
-        <span class="label">&nbsp;</span>
         <div id="totalS">南: 0</div>
         <div class="rank-line" id="rankS">順位: 1位0回 / 2位0回 / 3位0回</div>
       </div>
       <div class="player-total">
-        <span class="label">&nbsp;</span>
         <div id="totalW">西: 0</div>
         <div class="rank-line" id="rankW">順位: 1位0回 / 2位0回 / 3位0回</div>
       </div>
@@ -433,40 +490,40 @@
       <div class="grid3">
         <div>
           <div class="player-box-title">
-            <span><span class="wind-tag">東</span></span>
+            <span><span class="wind-tag">プレイヤー①</span></span>
           </div>
           <input type="text" id="nameE" placeholder="東の名前" value="東" />
           <div class="score-label">この半荘の結果（ポイント：+/-）</div>
           <input type="number" id="resE" inputmode="numeric" placeholder="例: 45" />
           <div class="tobi-flags">
-            <label><input type="checkbox" id="tobiWinE" /> 飛ばした</label>
-            <label><input type="checkbox" id="tobiLoseE" /> 飛ばされた</label>
+            <label><input type="checkbox" id="tobiWinE" onclick="if(this.checked) document.getElementById('tobiLoseE').checked = false;" /> 飛ばした</label>
+            <label><input type="checkbox" id="tobiLoseE" onclick="if(this.checked) document.getElementById('tobiWinE').checked = false;" /> 飛ばされた</label>
           </div>
         </div>
 
         <div>
           <div class="player-box-title">
-            <span><span class="wind-tag">南</span></span>
+            <span><span class="wind-tag">プレイヤー②</span></span>
           </div>
           <input type="text" id="nameS" placeholder="南の名前" value="南" />
           <div class="score-label">この半荘の結果（ポイント：+/-）</div>
           <input type="number" id="resS" inputmode="numeric" placeholder="例: -12" />
           <div class="tobi-flags">
-            <label><input type="checkbox" id="tobiWinS" /> 飛ばした</label>
-            <label><input type="checkbox" id="tobiLoseS" /> 飛ばされた</label>
+            <label><input type="checkbox" id="tobiWinS" onclick="if(this.checked) document.getElementById('tobiLoseS').checked = false;" /> 飛ばした</label>
+            <label><input type="checkbox" id="tobiLoseS" onclick="if(this.checked) document.getElementById('tobiWinS').checked = false;" /> 飛ばされた</label>
           </div>
         </div>
 
         <div>
           <div class="player-box-title">
-            <span><span class="wind-tag">西</span></span>
+            <span><span class="wind-tag">プレイヤー③</span></span>
           </div>
           <input type="text" id="nameW" placeholder="西の名前" value="西" />
           <div class="score-label">この半荘の結果（ポイント：+/-）</div>
           <input type="number" id="resW" inputmode="numeric" placeholder="例: -33" />
           <div class="tobi-flags">
-            <label><input type="checkbox" id="tobiWinW" /> 飛ばした</label>
-            <label><input type="checkbox" id="tobiLoseW" /> 飛ばされた</label>
+            <label><input type="checkbox" id="tobiWinW" onclick="if(this.checked) document.getElementById('tobiLoseW').checked = false;" /> 飛ばした</label>
+            <label><input type="checkbox" id="tobiLoseW" onclick="if(this.checked) document.getElementById('tobiWinW').checked = false;" /> 飛ばされた</label>
           </div>
         </div>
       </div>
@@ -487,16 +544,35 @@
         <button id="downloadCsv" class="secondary">CSV出力</button>
         <input type="file" id="uploadCsv" accept=".csv,text/csv" style="display:none;">
         <button id="uploadCsvBtn" class="secondary">CSV読み込み</button>
+        <button id="showGraphBtn" class="secondary">累計グラフ表示</button>
       </div>
+
     </div>
 
     <!-- 履歴 -->
     <div class="card">
-      <h3 style="margin:0 0 6px;font-size:14px;">履歴（最終結果のみ・複数飛び対応）</h3>
+      <h3 style="margin:0 0 6px;font-size:14px;">履歴</h3>
       <div class="history" id="historyList"></div>
     </div>
+
+    <!-- グラフモーダル -->
+    <div id="graphModal" class="graph-modal">
+      <div class="graph-modal-content">
+        <div class="graph-modal-header">
+          <div>累計ポイント推移グラフ</div>
+          <button class="graph-close-btn" id="graphCloseBtn" aria-label="閉じる">×</button>
+        </div>
+        <div class="graph-modal-sub">各半荘終了時点の累計ポイントの推移です。</div>
+        <div class="graph-canvas-wrap">
+          <canvas id="scoreChart"></canvas>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 // 設定トグル
@@ -515,122 +591,71 @@ let settings = {
 
 // history: {res:{E,S,W}, pts:{E,S,W}, names, comment, tobi}
 let history = [];
-saveState();
 let editingIndex = null;
 
-// ===== 永続化（更新しても消えないように localStorage に保存）=====
-var STORAGE_KEY = "mahjong_scoreboard_sanma_v2";
+// === localStorage による履歴保存・復元（サンマ） ===
+const STORAGE_KEY_SANMA_HISTORY = "sanma_history_v1";
 
-
-function _storageAvailable(){
+function saveHistorySanma(){
   try{
-    var k = "__sb_test__";
-    localStorage.setItem(k, "1");
-    localStorage.removeItem(k);
-    return true;
+    localStorage.setItem(STORAGE_KEY_SANMA_HISTORY, JSON.stringify(history));
   }catch(e){
-    return false;
+    console.error("Sanma history save error:", e);
   }
 }
 
-function _storageSet(key, value){
-  if(_storageAvailable()){
-    localStorage.setItem(key, value);
-    return;
-  }
-  // fallback: window.name（更新で消えない／iframeでも動くことが多い）
-  var prefix = "SB_STORE:";
-  var store = {};
+window.addEventListener("load", function(){
   try{
-    if(window.name && window.name.indexOf(prefix) === 0){
-      store = JSON.parse(window.name.slice(prefix.length)) || {};
+    const saved = localStorage.getItem(STORAGE_KEY_SANMA_HISTORY);
+    if(saved){
+      const parsed = JSON.parse(saved);
+      if(Array.isArray(parsed)){
+        history = parsed;
+      }
     }
   }catch(e){
-    store = {};
+    console.error("Sanma history load error:", e);
   }
-  store[key] = value;
-  try{
-    window.name = prefix + JSON.stringify(store);
-  }catch(e){
-    // 最終手段：何もしない
-  }
-}
-
-function _storageGet(key){
-  if(_storageAvailable()){
-    return localStorage.getItem(key);
-  }
-  var prefix = "SB_STORE:";
-  try{
-    if(window.name && window.name.indexOf(prefix) === 0){
-      var store = JSON.parse(window.name.slice(prefix.length)) || {};
-      return store[key] || null;
-    }
-  }catch(e){
-    return null;
-  }
-  return null;
-}
-
-function saveState(){
-  try{
-    var names = {};
-  var elNameE = document.getElementById("nameE");
-  names["E"] = elNameE && elNameE.value ? elNameE.value : "E";
-  var elNameS = document.getElementById("nameS");
-  names["S"] = elNameS && elNameS.value ? elNameS.value : "S";
-  var elNameW = document.getElementById("nameW");
-  names["W"] = elNameW && elNameW.value ? elNameW.value : "W";
-    var tw = document.getElementById("tobiWinInput");
-    var tl = document.getElementById("tobiLoseInput");
-    var state = {
-      version: 1,
-      settings: settings,
-      history: history,
-      names: names,
-      tobiWinInput: tw ? tw.value : "",
-      tobiLoseInput: tl ? tl.value : ""
-    };
-    _storageSet(STORAGE_KEY, JSON.stringify(state));
-  }catch(e){
-    console.log("saveState error", e);
-  }
-}
-
-function loadState(){
-  try{
-    var raw = _storageGet(STORAGE_KEY);
-    if(!raw) return;
-    var state = JSON.parse(raw);
-    if(state && state.settings) settings = state.settings;
-    if(state && state.history && Array.isArray(state.history)) history = state.history;
-
-  if(state.names && state.names["E"] && document.getElementById("nameE")) document.getElementById("nameE").value = state.names["E"];
-  if(state.names && state.names["S"] && document.getElementById("nameS")) document.getElementById("nameS").value = state.names["S"];
-  if(state.names && state.names["W"] && document.getElementById("nameW")) document.getElementById("nameW").value = state.names["W"];
-    if(document.getElementById("tobiWinInput") && typeof state.tobiWinInput !== "undefined"){
-      document.getElementById("tobiWinInput").value = state.tobiWinInput;
-    }
-    if(document.getElementById("tobiLoseInput") && typeof state.tobiLoseInput !== "undefined"){
-      document.getElementById("tobiLoseInput").value = state.tobiLoseInput;
-    }
-  }catch(e){
-    console.log("loadState error", e);
-  }
-}
-
-function setupAutoSaveBindings(){
-  var bnE = document.getElementById("nameE"); if(bnE) bnE.addEventListener("input", saveState);
-  var bnS = document.getElementById("nameS"); if(bnS) bnS.addEventListener("input", saveState);
-  var bnW = document.getElementById("nameW"); if(bnW) bnW.addEventListener("input", saveState);
-  var tw = document.getElementById("tobiWinInput"); if(tw) tw.addEventListener("input", saveState);
-  var tl = document.getElementById("tobiLoseInput"); if(tl) tl.addEventListener("input", saveState);
-}
-
-// 画面更新/タブを閉じる直前にも保存（念のため）
-window.addEventListener("beforeunload", function(){
-  saveState();
+  updateDOM();
 });
+
+// ===== プレイヤー名保存（サンマ） =====
+const STORAGE_KEY_SANMA_NAMES = "sanma_names_v1";
+
+function saveNamesSanma(){
+  const names = {
+    E: document.getElementById("nameE").value,
+    S: document.getElementById("nameS").value,
+    W: document.getElementById("nameW").value
+  };
+  localStorage.setItem(STORAGE_KEY_SANMA_NAMES, JSON.stringify(names));
+}
+
+window.addEventListener("load", function(){
+  const savedNames = localStorage.getItem(STORAGE_KEY_SANMA_NAMES);
+  if(savedNames){
+    try{
+      const parsed = JSON.parse(savedNames);
+      document.getElementById("nameE").value = parsed.E || "";
+      document.getElementById("nameS").value = parsed.S || "";
+      document.getElementById("nameW").value = parsed.W || "";
+    }catch(e){ console.error(e); }
+  }
+});
+
+["nameE","nameS","nameW"].forEach(id=>{
+  document.getElementById(id).addEventListener("change", saveNamesSanma);
+});
+// ===== プレイヤー名保存ここまで =====
+// === localStorage ここまで ===
+function formatTimestampJP(dt){
+  function pad(n){ return (n < 10 ? "0" : "") + n; }
+  return dt.getFullYear() + "/" +
+    pad(dt.getMonth() + 1) + "/" +
+    pad(dt.getDate()) + " " +
+    pad(dt.getHours()) + ":" +
+    pad(dt.getMinutes());
+}
 
 
 function computeTotals(){
@@ -646,68 +671,6 @@ function computeTotals(){
 function fmtSigned(n){
   if(n > 0) return "+" + n;
   return "" + n;
-}
-
-
-// 入力補助：スコアを2人分入力したら、残り1人を自動で計算（合計0になるように）
-// - 自動入力した欄は dataset.autoFilled="1" を付与
-// - その欄をユーザーが編集したら dataset.autoFilled を外して以後は上書きしない（手打ち修正OK）
-function setupAutoSumInputs(winds){
-  const ids = winds.map(w => "res" + w);
-  const els = ids.map(id => document.getElementById(id)).filter(Boolean);
-  if(els.length < 2) return;
-
-  function recompute(){
-    const values = els.map(el => el.value);
-    const emptyIdxs = [];
-    values.forEach(function(v, i){
-      if(String(v).trim() === "") emptyIdxs.push(i);
-    });
-
-    // 未入力が1つ：その欄を埋める
-    if(emptyIdxs.length === 1){
-      const idx = emptyIdxs[0];
-      const sumOthers = els.reduce(function(acc, el, i){
-        if(i === idx) return acc;
-        return acc + (Number(el.value) || 0);
-      }, 0);
-      const target = els[idx];
-      target.value = String(-sumOthers);
-      target.dataset.autoFilled = "1";
-      return;
-    }
-
-    // 未入力が0：autoFilled が1の欄がちょうど1つなら、その欄を更新
-    const autoIdxs = [];
-    els.forEach(function(el, i){
-      if(el.dataset.autoFilled === "1") autoIdxs.push(i);
-    });
-    if(emptyIdxs.length === 0 && autoIdxs.length === 1){
-      const idx = autoIdxs[0];
-      const sumOthers = els.reduce(function(acc, el, i){
-        if(i === idx) return acc;
-        return acc + (Number(el.value) || 0);
-      }, 0);
-      els[idx].value = String(-sumOthers);
-      return;
-    }
-  }
-
-  // 入力が確定する前後で value が揺れることがあるので、input/change 両方で 0ms 遅延実行
-  els.forEach(function(el){
-    const handler = function(){
-      // 自動入力欄をユーザーが触ったら、以後は手入力扱い（上書きしない）
-      if(el.dataset.autoFilled === "1"){
-        el.dataset.autoFilled = "0";
-      }
-      setTimeout(recompute, 0);
-    };
-    el.addEventListener("input", handler);
-    el.addEventListener("change", handler);
-  });
-
-  // 初回も動くように一度実行
-  setTimeout(recompute, 0);
 }
 
 function describeTobi(tobi, names){
@@ -789,8 +752,8 @@ function updateDOM(){
   const historyList = document.getElementById("historyList");
   historyList.innerHTML = "";
 
-  history.forEach(function(h, idx){
-    const no = idx + 1;
+  history.slice().reverse().forEach(function(h, idx){
+    const no = history.length - idx;
     const div = document.createElement("div");
     div.className = "row";
 
@@ -805,6 +768,7 @@ function updateDOM(){
     main.className = "row-main";
     let html =
       '<div class="row-title">第 ' + no + ' 半荘</div>' +
+      (h.timestamp ? '<div class="row-line" style="font-size:10px;color:#6b7280;">記録日時: ' + h.timestamp + '</div>' : '') +
       '<div class="row-line">[最終結果] ' + lineFinal + '</div>';
     if(tobiText){
       html += '<div class="row-line">[飛び] ' + tobiText + '</div>';
@@ -841,9 +805,6 @@ function clearInputArea(){
   document.getElementById("resE").value = "";
   document.getElementById("resS").value = "";
   document.getElementById("resW").value = "";
-  document.getElementById("resE").dataset.autoFilled = "0";
-  document.getElementById("resS").dataset.autoFilled = "0";
-  document.getElementById("resW").dataset.autoFilled = "0";
   document.getElementById("comment").value = "";
   document.getElementById("tobiWinE").checked = false;
   document.getElementById("tobiLoseE").checked = false;
@@ -851,8 +812,6 @@ function clearInputArea(){
   document.getElementById("tobiLoseS").checked = false;
   document.getElementById("tobiWinW").checked = false;
   document.getElementById("tobiLoseW").checked = false;
-  saveState();
-
 }
 
 // 設定ボタン
@@ -925,7 +884,8 @@ document.getElementById("calcBtn").addEventListener("click", function(){
   });
 
   const comment = document.getElementById("comment").value;
-  const entry = { res: res, pts: pts, names: names, comment: comment, tobi: tobi };
+  const now = new Date();
+  const entry = { res: res, pts: pts, names: names, comment: comment, tobi: tobi, timestamp: formatTimestampJP(now) };
 
   if(editingIndex === null){
     history.push(entry);
@@ -934,13 +894,9 @@ document.getElementById("calcBtn").addEventListener("click", function(){
     editingIndex = null;
   }
 
+  saveHistorySanma();
   clearInputArea();
-  loadState();
-setupAutoSaveBindings();
-setupAutoSumInputs(["E","S","W"]);
-setupTobiExclusive();
-updateDOM();
-saveState();
+  updateDOM();
 });
 
 // 編集開始
@@ -961,28 +917,25 @@ function startEdit(index){
   document.getElementById("tobiLoseW").checked = !!h.tobi.W.lose;
 
   updateDOM();
-saveState();
 }
 
 // 削除
 function deleteHand(index){
   if(!confirm("この半荘を削除しますか？")) return;
   history.splice(index,1);
-  saveState();
-editingIndex = null;
+  editingIndex = null;
+  saveHistorySanma();
   updateDOM();
-saveState();
 }
 
 // 全リセット
 document.getElementById("resetBtn").addEventListener("click", function(){
   if(!confirm("全ての履歴と合計をリセットしますか？")) return;
   history = [];
-  saveState();
-editingIndex = null;
+  editingIndex = null;
   clearInputArea();
+  saveHistorySanma();
   updateDOM();
-saveState();
 });
 
 // CSV出力（最終結果ベース）
@@ -1050,8 +1003,7 @@ function importCsvSanma(text){
   };
 
   history = [];
-  saveState();
-editingIndex = null;
+  editingIndex = null;
 
   for(let i = 1; i < lines.length; i++){
     const line = lines[i].trim();
@@ -1079,41 +1031,13 @@ editingIndex = null;
     history.push({
       res: res,
       pts: pts,
-      names: {E:names.E,S:names.S,W:names.W},
+      names: { ...names },
       comment: comment,
       tobi: tobi
     });
-  saveState();
-}
+  }
 
   updateDOM();
-saveState();
-}
-
-
-// 「飛ばした」と「飛ばされた」を排他にする
-function setupTobiExclusive(){
-  const pairs = [
-    ["tobiWinE", "tobiLoseE"],
-    ["tobiWinS", "tobiLoseS"],
-    ["tobiWinW", "tobiLoseW"],
-    ["tobiWinN", "tobiLoseN"] // 北は要素が無い場合スキップされる
-  ];
-  pairs.forEach(function(ids){
-    const winEl  = document.getElementById(ids[0]);
-    const loseEl = document.getElementById(ids[1]);
-    if(!winEl || !loseEl) return;
-    winEl.addEventListener("change", function(){
-      if(winEl.checked){
-        loseEl.checked = false;
-      }
-    });
-    loseEl.addEventListener("change", function(){
-      if(loseEl.checked){
-        winEl.checked = false;
-      }
-    });
-  });
 }
 
 // LINE共有（累計のみ）
@@ -1184,9 +1108,114 @@ document.getElementById("shareLineBtn").addEventListener("click", async function
   window.open(url, "_blank");
 });
 
-
 updateDOM();
-saveState();
+
+// 累計グラフ（サンマ）
+let scoreChart = null;
+
+function buildGraphDataSanma(){
+  const labels = [];
+  const cum = {E:0,S:0,W:0};
+  const series = {E:[],S:[],W:[]};
+
+  history.forEach(function(h, idx){
+    labels.push("第" + (idx+1) + "半荘");
+    cum.E += h.pts.E;
+    cum.S += h.pts.S;
+    cum.W += h.pts.W;
+    series.E.push(cum.E);
+    series.S.push(cum.S);
+    series.W.push(cum.W);
+  });
+
+  const lastNames = history.length
+    ? history[history.length-1].names
+    : {
+        E: document.getElementById("nameE").value || "プレイヤー①",
+        S: document.getElementById("nameS").value || "プレイヤー②",
+        W: document.getElementById("nameW").value || "プレイヤー③"
+      };
+
+  return {
+    labels: labels,
+    datasets: [
+      {
+        label: lastNames.E,
+        data: series.E,
+        tension: 0.2
+      },
+      {
+        label: lastNames.S,
+        data: series.S,
+        tension: 0.2
+      },
+      {
+        label: lastNames.W,
+        data: series.W,
+        tension: 0.2
+      }
+    ]
+  };
+}
+
+function openGraphModalSanma(){
+  if(history.length === 0){
+    alert("まずは1半荘以上の結果を記録してください。");
+    return;
+  }
+  const m = document.getElementById("graphModal");
+  m.style.display = "flex";
+
+  const ctx = document.getElementById("scoreChart").getContext("2d");
+  if(scoreChart){
+    scoreChart.destroy();
+  }
+
+  const data = buildGraphDataSanma();
+  scoreChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: data.labels,
+      datasets: data.datasets
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true
+        }
+      },
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: "半荘"
+          }
+        },
+        y: {
+          title: {
+            display: true,
+            text: "累計ポイント"
+          },
+          ticks: {
+            stepSize: 10
+          }
+        }
+      }
+    }
+  });
+}
+
+document.getElementById("showGraphBtn").addEventListener("click", openGraphModalSanma);
+document.getElementById("graphCloseBtn").addEventListener("click", function(){
+  document.getElementById("graphModal").style.display = "none";
+});
+document.getElementById("graphModal").addEventListener("click", function(e){
+  if(e.target.id === "graphModal"){
+    document.getElementById("graphModal").style.display = "none";
+  }
+});
+
 </script>
 </body>
 </html>
