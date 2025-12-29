@@ -375,7 +375,7 @@
     <div class="header">
       <div class="header-title">
         <span class="tile-mark">三</span>
-        <span>aa三人麻雀 結果＋飛びスコア（最終結果のみ履歴・累計LINE共有・複数飛び対応）応）span>
+        <span>bb三人麻雀 結果＋飛びスコア（最終結果のみ履歴・累計LINE共有・複数飛び対応）</span>
       </div>
       <div class="header-sub">
         半荘ごとの「結果ポイント」だけ入力。飛び込み後がその半荘の最終結果として記録されます。
@@ -521,6 +521,57 @@ let editingIndex = null;
 // ===== 永続化（更新しても消えないように localStorage に保存）=====
 var STORAGE_KEY = "mahjong_scoreboard_sanma_v2";
 
+
+function _storageAvailable(){
+  try{
+    var k = "__sb_test__";
+    localStorage.setItem(k, "1");
+    localStorage.removeItem(k);
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
+function _storageSet(key, value){
+  if(_storageAvailable()){
+    localStorage.setItem(key, value);
+    return;
+  }
+  // fallback: window.name（更新で消えない／iframeでも動くことが多い）
+  var prefix = "SB_STORE:";
+  var store = {};
+  try{
+    if(window.name && window.name.indexOf(prefix) === 0){
+      store = JSON.parse(window.name.slice(prefix.length)) || {};
+    }
+  }catch(e){
+    store = {};
+  }
+  store[key] = value;
+  try{
+    window.name = prefix + JSON.stringify(store);
+  }catch(e){
+    // 最終手段：何もしない
+  }
+}
+
+function _storageGet(key){
+  if(_storageAvailable()){
+    return localStorage.getItem(key);
+  }
+  var prefix = "SB_STORE:";
+  try{
+    if(window.name && window.name.indexOf(prefix) === 0){
+      var store = JSON.parse(window.name.slice(prefix.length)) || {};
+      return store[key] || null;
+    }
+  }catch(e){
+    return null;
+  }
+  return null;
+}
+
 function saveState(){
   try{
     var names = {};
@@ -540,7 +591,7 @@ function saveState(){
       tobiWinInput: tw ? tw.value : "",
       tobiLoseInput: tl ? tl.value : ""
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    _storageSet(STORAGE_KEY, JSON.stringify(state));
   }catch(e){
     console.log("saveState error", e);
   }
@@ -548,7 +599,7 @@ function saveState(){
 
 function loadState(){
   try{
-    var raw = localStorage.getItem(STORAGE_KEY);
+    var raw = _storageGet(STORAGE_KEY);
     if(!raw) return;
     var state = JSON.parse(raw);
     if(state && state.settings) settings = state.settings;
