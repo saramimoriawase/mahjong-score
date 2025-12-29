@@ -515,6 +515,7 @@ let settings = {
 
 // history: {res:{E,S,W}, pts:{E,S,W}, names, comment, tobi}
 let history = [];
+saveState();
 let editingIndex = null;
 
 // ===== 永続化（更新しても消えないように localStorage に保存）=====
@@ -574,6 +575,12 @@ function setupAutoSaveBindings(){
   var tw = document.getElementById("tobiWinInput"); if(tw) tw.addEventListener("input", saveState);
   var tl = document.getElementById("tobiLoseInput"); if(tl) tl.addEventListener("input", saveState);
 }
+
+// 画面更新/タブを閉じる直前にも保存（念のため）
+window.addEventListener("beforeunload", function(){
+  saveState();
+});
+
 
 function computeTotals(){
   const total = {E:0,S:0,W:0};
@@ -910,7 +917,8 @@ saveState();
 function deleteHand(index){
   if(!confirm("この半荘を削除しますか？")) return;
   history.splice(index,1);
-  editingIndex = null;
+  saveState();
+editingIndex = null;
   updateDOM();
 saveState();
 }
@@ -919,7 +927,8 @@ saveState();
 document.getElementById("resetBtn").addEventListener("click", function(){
   if(!confirm("全ての履歴と合計をリセットしますか？")) return;
   history = [];
-  editingIndex = null;
+  saveState();
+editingIndex = null;
   clearInputArea();
   updateDOM();
 saveState();
@@ -990,7 +999,8 @@ function importCsvSanma(text){
   };
 
   history = [];
-  editingIndex = null;
+  saveState();
+editingIndex = null;
 
   for(let i = 1; i < lines.length; i++){
     const line = lines[i].trim();
@@ -1022,7 +1032,8 @@ function importCsvSanma(text){
       comment: comment,
       tobi: tobi
     });
-  }
+  saveState();
+}
 
   updateDOM();
 saveState();
