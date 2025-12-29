@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
-  <title>"三人麻雀"スコアボード</title>
+  <title>三人麻雀 結果入力＋飛びスコアボード（スマホ向け・A/LINE共有：累計のみ・最終結果のみ履歴・複数飛び対応）</title>
   <style>
     :root{
       --bg-table:#0b6b3f;
@@ -375,9 +375,11 @@
     <div class="header">
       <div class="header-title">
         <span class="tile-mark">三</span>
-        <span>"三人麻雀"スコアボード</span>
+        <span>三人麻雀 結果＋飛びスコア（最終結果のみ履歴・累計LINE共有・複数飛び対応）</span>
       </div>
       <div class="header-sub">
+        半荘ごとの「結果ポイント」だけ入力。飛び込み後がその半荘の最終結果として記録されます。
+        1人が2人同時に飛ばした場合は、飛ばした人に飛びボーナスが2人分加算されます。
       </div>
     </div>
 
@@ -410,7 +412,7 @@
     <!-- 合計表示 -->
     <div class="totalScores">
       <div class="player-total">
-        <span class="label">&nbsp;</span>
+        <span class="label">累計ポイント（最終結果ベース）</span>
         <div id="totalE">東: 0</div>
         <div class="rank-line" id="rankE">順位: 1位0回 / 2位0回 / 3位0回</div>
       </div>
@@ -514,6 +516,64 @@ let settings = {
 // history: {res:{E,S,W}, pts:{E,S,W}, names, comment, tobi}
 let history = [];
 let editingIndex = null;
+
+// ===== 永続化（更新しても消えないように localStorage に保存）=====
+var STORAGE_KEY = "mahjong_scoreboard_sanma_v2";
+
+function saveState(){
+  try{
+    var names = {};
+  var elNameE = document.getElementById("nameE");
+  names["E"] = elNameE && elNameE.value ? elNameE.value : "E";
+  var elNameS = document.getElementById("nameS");
+  names["S"] = elNameS && elNameS.value ? elNameS.value : "S";
+  var elNameW = document.getElementById("nameW");
+  names["W"] = elNameW && elNameW.value ? elNameW.value : "W";
+    var tw = document.getElementById("tobiWinInput");
+    var tl = document.getElementById("tobiLoseInput");
+    var state = {
+      version: 1,
+      settings: settings,
+      history: history,
+      names: names,
+      tobiWinInput: tw ? tw.value : "",
+      tobiLoseInput: tl ? tl.value : ""
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }catch(e){
+    console.log("saveState error", e);
+  }
+}
+
+function loadState(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    var state = JSON.parse(raw);
+    if(state && state.settings) settings = state.settings;
+    if(state && state.history && Array.isArray(state.history)) history = state.history;
+
+  if(state.names && state.names["E"] && document.getElementById("nameE")) document.getElementById("nameE").value = state.names["E"];
+  if(state.names && state.names["S"] && document.getElementById("nameS")) document.getElementById("nameS").value = state.names["S"];
+  if(state.names && state.names["W"] && document.getElementById("nameW")) document.getElementById("nameW").value = state.names["W"];
+    if(document.getElementById("tobiWinInput") && typeof state.tobiWinInput !== "undefined"){
+      document.getElementById("tobiWinInput").value = state.tobiWinInput;
+    }
+    if(document.getElementById("tobiLoseInput") && typeof state.tobiLoseInput !== "undefined"){
+      document.getElementById("tobiLoseInput").value = state.tobiLoseInput;
+    }
+  }catch(e){
+    console.log("loadState error", e);
+  }
+}
+
+function setupAutoSaveBindings(){
+  var bnE = document.getElementById("nameE"); if(bnE) bnE.addEventListener("input", saveState);
+  var bnS = document.getElementById("nameS"); if(bnS) bnS.addEventListener("input", saveState);
+  var bnW = document.getElementById("nameW"); if(bnW) bnW.addEventListener("input", saveState);
+  var tw = document.getElementById("tobiWinInput"); if(tw) tw.addEventListener("input", saveState);
+  var tl = document.getElementById("tobiLoseInput"); if(tl) tl.addEventListener("input", saveState);
+}
 
 function computeTotals(){
   const total = {E:0,S:0,W:0};
@@ -733,6 +793,8 @@ function clearInputArea(){
   document.getElementById("tobiLoseS").checked = false;
   document.getElementById("tobiWinW").checked = false;
   document.getElementById("tobiLoseW").checked = false;
+  saveState();
+
 }
 
 // 設定ボタン
@@ -815,9 +877,12 @@ document.getElementById("calcBtn").addEventListener("click", function(){
   }
 
   clearInputArea();
-  setupAutoSumInputs(["E","S","W"]);
+  loadState();
+setupAutoSaveBindings();
+setupAutoSumInputs(["E","S","W"]);
 setupTobiExclusive();
 updateDOM();
+saveState();
 });
 
 // 編集開始
@@ -838,6 +903,7 @@ function startEdit(index){
   document.getElementById("tobiLoseW").checked = !!h.tobi.W.lose;
 
   updateDOM();
+saveState();
 }
 
 // 削除
@@ -846,6 +912,7 @@ function deleteHand(index){
   history.splice(index,1);
   editingIndex = null;
   updateDOM();
+saveState();
 }
 
 // 全リセット
@@ -855,6 +922,7 @@ document.getElementById("resetBtn").addEventListener("click", function(){
   editingIndex = null;
   clearInputArea();
   updateDOM();
+saveState();
 });
 
 // CSV出力（最終結果ベース）
@@ -950,13 +1018,14 @@ function importCsvSanma(text){
     history.push({
       res: res,
       pts: pts,
-      names: { ...names },
+      names: {E:names.E,S:names.S,W:names.W},
       comment: comment,
       tobi: tobi
     });
   }
 
   updateDOM();
+saveState();
 }
 
 
@@ -1055,6 +1124,7 @@ document.getElementById("shareLineBtn").addEventListener("click", async function
 
 
 updateDOM();
+saveState();
 </script>
 </body>
 </html>
