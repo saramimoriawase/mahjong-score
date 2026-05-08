@@ -60,6 +60,7 @@
     @media (min-width:560px){ .chip-grid{ grid-template-columns:repeat(4,1fr); } }
     .result-card{ display:none; margin-top:8px; background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:10px; }
     .result-card.show{ display:block; }
+    input.auto-calculated{ background:#ecfdf5; border-color:#16a34a; font-weight:700; }
     .result-line{ font-size:13px; line-height:1.6; }
 
     .totalScores{ display:flex; flex-direction:column; gap:6px; margin-bottom:8px; font-size:14px; font-weight:700; color:#fefce8; }
@@ -295,7 +296,31 @@ function updateChipLabels(){
 }
 
 function saveRate(){ localStorage.setItem(STORAGE_KEY_SANMA_RATE, document.getElementById("rateInput").value || ""); }
+function chipInputs(){ return {E:document.getElementById("chipEInput"), S:document.getElementById("chipSInput"), W:document.getElementById("chipWInput")}; }
+function parseChipValue(input){ const raw=input.value.trim(); if(raw==="") return null; const n=Number(raw); return Number.isFinite(n) ? n : null; }
+function applyAutoChipCalculation(){
+  const inputs = chipInputs();
+  WINDS.forEach(w => {
+    if(inputs[w].dataset.auto === "1"){
+      inputs[w].value = "";
+      inputs[w].dataset.auto = "";
+      inputs[w].classList.remove("auto-calculated");
+    }
+  });
+  const values = {};
+  WINDS.forEach(w => values[w] = parseChipValue(inputs[w]));
+  const filled = WINDS.filter(w => values[w] !== null);
+  const empty = WINDS.filter(w => values[w] === null);
+  if(filled.length === WINDS.length - 1 && empty.length === 1){
+    const missing = empty[0];
+    const sum = filled.reduce((a,w) => a + (values[w] || 0), 0);
+    inputs[missing].value = -sum;
+    inputs[missing].dataset.auto = "1";
+    inputs[missing].classList.add("auto-calculated");
+  }
+}
 function getChipSettings(){
+  applyAutoChipCalculation();
   return {
     value: Number(document.getElementById("chipValueInput").value) || 0,
     chips: {
@@ -305,7 +330,22 @@ function getChipSettings(){
     }
   };
 }
+function validateChipTotal(){
+  const hasChipValue = (Number(document.getElementById("chipValueInput").value) || 0) > 0;
+  const inputs = chipInputs();
+  const hasChipInput = WINDS.some(w => inputs[w].value.trim() !== "");
+  if(!hasChipValue && !hasChipInput) return {ok:true};
+  applyAutoChipCalculation();
+  const values = {};
+  const missing = [];
+  WINDS.forEach(w => { const v = parseChipValue(inputs[w]); if(v === null) missing.push(w); values[w] = v; });
+  if(missing.length > 0) return {ok:false, message:"チップ枚数は2人分まで入力すると残り1人を自動計算します。全員分をそろえてください。"};
+  const sum = WINDS.reduce((a,w) => a + (values[w] || 0), 0);
+  if(sum !== 0) return {ok:false, message:"チップ枚数の合計が0になっていません。2人分だけ入力すると3人目は自動計算されます。全員入力する場合は合計0にしてください。"};
+  return {ok:true};
+}
 function saveChips(){
+  applyAutoChipCalculation();
   const data = {
     value: document.getElementById("chipValueInput").value || "",
     E: document.getElementById("chipEInput").value || "",
@@ -353,7 +393,11 @@ function clearInputArea(){
 function buildSettlementHtml(){
   const rate = Number(document.getElementById("rateInput").value);
   if(!Number.isFinite(rate) || rate <= 0){
-    return { ok:false, html:'<div class="result-line">レートを入力してください。</div>' };
+    return { ok:false, html:'<div class="result-line">レートを入力してください。</div>', message:"レートを入力してください。" };
+  }
+  const chipValidation = validateChipTotal();
+  if(!chipValidation.ok){
+    return { ok:false, html:'', message:chipValidation.message };
   }
   const totals = computeTotals();
   const names = getNames();
@@ -366,7 +410,7 @@ function buildSettlementHtml(){
     const chipText = chipEnabled ? ' / チップ ' + fmtSigned(chip.chips[w]) + '枚 = ' + fmtYen(chipYen) : '';
     return '<div class="result-line">' + names[w] + '：' + totals[w] + 'pt = ' + fmtYen(pointYen) + chipText + ' → <strong>' + fmtYen(totalYen) + '</strong></div>';
   }).join("");
-  const chipNote = chipEnabled ? '<div class="result-line" style="font-size:11px;color:#6b7280;margin-top:4px;">※チップ1枚=' + fmtYen(chip.value).replace(/^\+/, "") + 'で計算</div>' : '';
+  const chipNote = chipEnabled ? '<div class="result-line" style="font-size:11px;color:#6b7280;margin-top:4px;">※チップ1枚=' + fmtYen(chip.value).replace(/^\+/, "") + 'で計算 / チップ合計は0</div>' : '';
   return { ok:true, html: rows + chipNote, rate, chip };
 }
 function computeRankCounts(){
@@ -385,7 +429,13 @@ function computeRankCounts(){
   return rankCounts;
 }
 function showSettlement(){
+  saveRate();
+  saveChips();
   const result = buildSettlementHtml();
+  if(!result.ok){
+    alert(result.message || "レートを入力してください。");
+    return;
+  }
   const box = document.getElementById("settlementResult");
   box.innerHTML = result.html;
   box.classList.add("show");
@@ -582,7 +632,11 @@ function shareLine(){
         text += `（点数${fmtYen(pointYen)} / チップ${fmtSigned(chip.chips[w])}枚 ${fmtYen(chipYen)}）`;
       }
     });
+  }else if((Number(document.getElementById("rateInput").value) || 0) > 0 || WINDS.some(w => document.getElementById("chip" + w + "Input").value.trim() !== "")){
+    alert(settlement.message || "精算項目を確認してください。");
+    return;
   }
+
   const url = "https://line.me/R/msg/text/?" + encodeURIComponent(text);
   window.open(url, "_blank");
 }
@@ -654,6 +708,7 @@ window.addEventListener("load", function(){
     }
   }catch(e){ console.error(e); }
 
+  applyAutoChipCalculation();
   updateDOM();
 });
 
@@ -668,7 +723,8 @@ function toggleSettlementPanel(){
 ["nameE","nameS","nameW"].forEach(id => document.getElementById(id).addEventListener("input", function(){ saveNames(); updateDOM(); }));
 ["resE","resS","resW"].forEach(id => document.getElementById(id).addEventListener("input", applyAutoCalculation));
 document.getElementById("rateInput").addEventListener("input", saveRate);
-["chipValueInput","chipEInput","chipSInput","chipWInput"].forEach(id => document.getElementById(id).addEventListener("input", saveChips));
+document.getElementById("chipValueInput").addEventListener("input", saveChips);
+["E","S","W"].forEach(w => document.getElementById("chip" + w + "Input").addEventListener("input", function(){ if(this.dataset.auto === "1"){ this.dataset.auto = ""; this.classList.remove("auto-calculated"); } saveChips(); }));
 document.getElementById("toggleSettlementBtn").addEventListener("click", toggleSettlementPanel);
 document.getElementById("showSettlementBtn").addEventListener("click", showSettlement);
 
