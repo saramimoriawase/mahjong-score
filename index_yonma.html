@@ -431,6 +431,34 @@
       height:320px !important;
     }
 
+    .rate-box{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:8px;
+      margin-top:10px;
+    }
+    @media (min-width:560px){ .rate-box{ grid-template-columns:1fr auto; align-items:end; } }
+    .rate-box label{ display:block; font-size:12px; color:#374151; margin-bottom:4px; }
+    .rate-help{ font-size:11px; color:#6b7280; margin-top:2px; }
+    .chip-grid{ display:grid; grid-template-columns:1fr; gap:8px; margin-top:8px; }
+    @media (min-width:560px){ .chip-grid{ grid-template-columns:repeat(5,1fr); } }
+    .result-card{
+      display:none;
+      margin-top:8px;
+      padding:8px 10px;
+      border-radius:10px;
+      background:#ecfdf5;
+      border:1px solid #bbf7d0;
+      font-size:13px;
+      line-height:1.5;
+    }
+    .result-card.show{ display:block; }
+    input.auto-calculated{
+      background:#ecfdf5;
+      border-color:#16a34a;
+      font-weight:700;
+    }
+
   </style>
 </head>
 <body>
@@ -446,31 +474,45 @@
       </div>
     </div>
 
-    <!-- 設定トグル -->
-    <div class="settings-toggle-bar">
-      <button id="toggleSettingsBtn" class="settings-toggle-btn">飛び設定 ▼</button>
+    <!-- 精算エリア -->
+    <div class="card settlement-card">
+
+      <div class="rate-box">
+        <div>
+          <label for="rateInput">レート（1ポイントあたりの円）</label>
+          <input type="number" id="rateInput" inputmode="decimal" placeholder="例: 50" />
+          <div class="rate-help">累計ポイント × レートに、チップ精算を足して表示します。</div>
+        </div>
+        <div>
+          <button id="showSettlementBtn" class="secondary">精算を表示</button>
+        </div>
+      </div>
+      <div class="chip-grid">
+        <div>
+          <label for="chipValueInput">チップ1枚の金額</label>
+          <input type="number" id="chipValueInput" inputmode="numeric" placeholder="例: 100" />
+          <div class="rate-help">チップを使わない場合は空欄でOKです。</div>
+        </div>
+        <div>
+          <label for="chipEInput" id="chipELabel">東のチップ枚数</label>
+          <input type="number" id="chipEInput" inputmode="numeric" placeholder="例: 2 / -1" />
+        </div>
+        <div>
+          <label for="chipSInput" id="chipSLabel">南のチップ枚数</label>
+          <input type="number" id="chipSInput" inputmode="numeric" placeholder="例: -1" />
+        </div>
+        <div>
+          <label for="chipWInput" id="chipWLabel">西のチップ枚数</label>
+          <input type="number" id="chipWInput" inputmode="numeric" placeholder="例: -1" />
+        </div>
+        <div>
+          <label for="chipNInput" id="chipNLabel">北のチップ枚数</label>
+          <input type="number" id="chipNInput" inputmode="numeric" placeholder="例: 0" />
+        </div>
+      </div>
+      <div id="settlementResult" class="result-card"></div>
     </div>
 
-    <!-- 設定エリア（折りたたみ） -->
-    <div class="card card-settings" id="settingsPanel" style="display:none;">
-      <div class="settings-grid">
-        <div class="settings-item">
-          <label>飛ばしたボーナス（1人飛ばすごと）</label>
-          <input type="number" id="tobiWinInput" value="10" />
-        </div>
-        <div class="settings-item">
-          <label>飛ばされたペナルティ（1人ぶん）</label>
-          <input type="number" id="tobiLoseInput" value="-10" />
-        </div>
-        <div class="settings-item">
-          <label style="margin-bottom:0;">注意</label>
-          <span style="font-size:10px;color:#6b7280;">結果4人の合計は0にしてください（飛びは自動加算／複数飛び時は人数分加算）</span>
-        </div>
-      </div>
-      <div class="settings-actions">
-        <button id="applySettingsBtn">設定を適用</button>
-      </div>
-    </div>
 
     <!-- 合計表示 -->
     <div class="totalScores">
@@ -502,10 +544,6 @@
           <input type="text" id="nameE" placeholder="東の名前" value="東" />
           <div class="score-label">この半荘の結果（ポイント：+/-）</div>
           <input type="number" id="resE" inputmode="numeric" placeholder="例: 25" />
-          <div class="tobi-flags">
-            <label><input type="checkbox" id="tobiWinE" onclick="if(this.checked) document.getElementById('tobiLoseE').checked = false;" /> 飛ばした</label>
-            <label><input type="checkbox" id="tobiLoseE" onclick="if(this.checked) document.getElementById('tobiWinE').checked = false;" /> 飛ばされた</label>
-          </div>
         </div>
 
         <div>
@@ -515,10 +553,6 @@
           <input type="text" id="nameS" placeholder="南の名前" value="南" />
           <div class="score-label">この半荘の結果（ポイント：+/-）</div>
           <input type="number" id="resS" inputmode="numeric" placeholder="例: -5" />
-          <div class="tobi-flags">
-            <label><input type="checkbox" id="tobiWinS" onclick="if(this.checked) document.getElementById('tobiLoseS').checked = false;" /> 飛ばした</label>
-            <label><input type="checkbox" id="tobiLoseS" onclick="if(this.checked) document.getElementById('tobiWinS').checked = false;" /> 飛ばされた</label>
-          </div>
         </div>
 
         <div>
@@ -528,10 +562,6 @@
           <input type="text" id="nameW" placeholder="西の名前" value="西" />
           <div class="score-label">この半荘の結果（ポイント：+/-）</div>
           <input type="number" id="resW" inputmode="numeric" placeholder="例: -10" />
-          <div class="tobi-flags">
-            <label><input type="checkbox" id="tobiWinW" onclick="if(this.checked) document.getElementById('tobiLoseW').checked = false;" /> 飛ばした</label>
-            <label><input type="checkbox" id="tobiLoseW" onclick="if(this.checked) document.getElementById('tobiWinW').checked = false;" /> 飛ばされた</label>
-          </div>
         </div>
 
         <div>
@@ -541,26 +571,23 @@
           <input type="text" id="nameN" placeholder="北の名前" value="北" />
           <div class="score-label">この半荘の結果（ポイント：+/-）</div>
           <input type="number" id="resN" inputmode="numeric" placeholder="例: -10" />
-          <div class="tobi-flags">
-            <label><input type="checkbox" id="tobiWinN" onclick="if(this.checked) document.getElementById('tobiLoseN').checked = false;" /> 飛ばした</label>
-            <label><input type="checkbox" id="tobiLoseN" onclick="if(this.checked) document.getElementById('tobiWinN').checked = false;" /> 飛ばされた</label>
-          </div>
         </div>
       </div>
+
 
       <div style="margin-top:10px">
         <input
           type="text"
           id="comment"
           class="comment-input"
-          placeholder="コメント（例：箱下・親倍ツモ・トリプル飛びなど）"
+          placeholder="コメント（例：箱下・親倍ツモなど）"
         />
       </div>
 
       <div class="controls">
         <button id="calcBtn">🀄 計算して記録</button>
         <button id="resetBtn" class="secondary">全リセット</button>
-        <button id="shareLineBtn" class="secondary">LINEで共有（累計のみ）</button>
+        <button id="shareLineBtn" class="secondary">LINEで共有</button>
         <button id="downloadCsv" class="secondary">CSV出力</button>
         <input type="file" id="uploadCsv" accept=".csv,text/csv" style="display:none;">
         <button id="uploadCsvBtn" class="secondary">CSV読み込み</button>
@@ -595,689 +622,62 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-// 設定トグル
-document.getElementById("toggleSettingsBtn").addEventListener("click", function(){
-  var p = document.getElementById("settingsPanel");
-  var isHidden = p.style.display === "none" || p.style.display === "";
-  p.style.display = isHidden ? "block" : "none";
-  this.textContent = isHidden ? "飛び設定 ▲" : "飛び設定 ▼";
-});
-
-// 設定（飛びのみ可変）
-let settings = {
-  tobiWin: 10,
-  tobiLose: -10
-};
-
-// history: {res:{E,S,W,N}, pts:{E,S,W,N}, names, comment, tobi}
+const WINDS = ["E","S","W","N"];
+const DEFAULT_NAMES = {E:"東", S:"南", W:"西", N:"北"};
+const STORAGE_KEY_HISTORY = "yonma_history_v2";
+const STORAGE_KEY_NAMES = "yonma_names_v2";
+const STORAGE_KEY_RATE = "yonma_rate_v1";
+const STORAGE_KEY_CHIPS = "yonma_chips_v1";
 let history = [];
 let editingIndex = null;
-
-// === localStorage による履歴保存・復元（ヨンマ） ===
-const STORAGE_KEY_YONMA_HISTORY = "yonma_history_v1";
-
-function saveHistoryYonma(){
-  try{
-    localStorage.setItem(STORAGE_KEY_YONMA_HISTORY, JSON.stringify(history));
-  }catch(e){
-    console.error("Yonma history save error:", e);
-  }
-}
-
-window.addEventListener("load", function(){
-  try{
-    const saved = localStorage.getItem(STORAGE_KEY_YONMA_HISTORY);
-    if(saved){
-      const parsed = JSON.parse(saved);
-      if(Array.isArray(parsed)){
-        history = parsed;
-      }
-    }
-  }catch(e){
-    console.error("Yonma history load error:", e);
-  }
-  updateDOM();
-});
-
-// ===== プレイヤー名保存（ヨンマ） =====
-const STORAGE_KEY_YONMA_NAMES = "yonma_names_v1";
-
-function saveNamesYonma(){
-  const names = {
-    E: document.getElementById("nameE").value,
-    S: document.getElementById("nameS").value,
-    W: document.getElementById("nameW").value,
-    N: document.getElementById("nameN").value
-  };
-  localStorage.setItem(STORAGE_KEY_YONMA_NAMES, JSON.stringify(names));
-}
-
-window.addEventListener("load", function(){
-  const savedNames = localStorage.getItem(STORAGE_KEY_YONMA_NAMES);
-  if(savedNames){
-    try{
-      const parsed = JSON.parse(savedNames);
-      document.getElementById("nameE").value = parsed.E || "";
-      document.getElementById("nameS").value = parsed.S || "";
-      document.getElementById("nameW").value = parsed.W || "";
-      document.getElementById("nameN").value = parsed.N || "";
-    }catch(e){ console.error(e); }
-  }
-});
-
-["nameE","nameS","nameW","nameN"].forEach(id=>{
-  document.getElementById(id).addEventListener("change", saveNamesYonma);
-});
-// ===== プレイヤー名保存ここまで =====
-// === localStorage ここまで ===
-function formatTimestampJP(dt){
-  function pad(n){ return (n < 10 ? "0" : "") + n; }
-  return dt.getFullYear() + "/" +
-    pad(dt.getMonth() + 1) + "/" +
-    pad(dt.getDate()) + " " +
-    pad(dt.getHours()) + ":" +
-    pad(dt.getMinutes());
-}
-
-
-function computeTotals(){
-  const total = {E:0,S:0,W:0,N:0};
-  history.forEach(function(h){
-    total.E += h.pts.E;
-    total.S += h.pts.S;
-    total.W += h.pts.W;
-    total.N += h.pts.N;
-  });
-  return total;
-}
-
-function fmtSigned(n){
-  if(n > 0) return "+" + n;
-  return "" + n;
-}
-
-function describeTobi(tobi, names){
-  var parts = [];
-  ["E","S","W","N"].forEach(function(w){
-    var flag = tobi[w];
-    if(!flag) return;
-    if(flag.win){
-      parts.push(names[w] + " 飛ばし");
-    }
-    if(flag.lose){
-      parts.push(names[w] + " 飛ばされた");
-    }
-  });
-  if(parts.length === 0) return "";
-  return parts.join(" / ");
-}
-
-function updateDOM(){
-  const totals = computeTotals();
-
-  const nameE = document.getElementById("nameE").value || "東";
-  const nameS = document.getElementById("nameS").value || "南";
-  const nameW = document.getElementById("nameW").value || "西";
-  const nameN = document.getElementById("nameN").value || "北";
-
-  document.getElementById("totalE").textContent = nameE + ": " + totals.E;
-  document.getElementById("totalS").textContent = nameS + ": " + totals.S;
-  document.getElementById("totalW").textContent = nameW + ": " + totals.W;
-  document.getElementById("totalN").textContent = nameN + ": " + totals.N;
-
-  // 累計ポイントの色分け
-  ["E","S","W","N"].forEach(function(w){
-    const el = document.getElementById("total"+w);
-    if(!el) return;
-    const v = totals[w];
-    if(v > 0) el.style.color = "#007bff";
-    else if(v < 0) el.style.color = "#ff3333";
-    else el.style.color = "#000000";
-  });
-
-  // 累計順位カウント（四麻）
-  const rankCounts = {
-    E: {1:0,2:0,3:0,4:0},
-    S: {1:0,2:0,3:0,4:0},
-    W: {1:0,2:0,3:0,4:0},
-    N: {1:0,2:0,3:0,4:0}
-  };
-  history.forEach(function(h){
-    const arr = [
-      {w:"E", v:h.pts.E},
-      {w:"S", v:h.pts.S},
-      {w:"W", v:h.pts.W},
-      {w:"N", v:h.pts.N}
-    ];
-    arr.sort(function(a,b){ return b.v - a.v; });
-    let prevVal = null;
-    let currentRank = 1;
-    arr.forEach(function(item, idx){
-      if(prevVal !== null && item.v < prevVal){
-        currentRank = idx + 1;
-      }
-      rankCounts[item.w][currentRank] += 1;
-      prevVal = item.v;
-    });
-  });
-  if(document.getElementById("rankE")){
-    const rc = rankCounts.E;
-    document.getElementById("rankE").textContent =
-      "順位: 1位" + (rc[1]||0) + "回 / 2位" + (rc[2]||0) + "回 / 3位" + (rc[3]||0) + "回 / 4位" + (rc[4]||0) + "回";
-  }
-  if(document.getElementById("rankS")){
-    const rc = rankCounts.S;
-    document.getElementById("rankS").textContent =
-      "順位: 1位" + (rc[1]||0) + "回 / 2位" + (rc[2]||0) + "回 / 3位" + (rc[3]||0) + "回 / 4位" + (rc[4]||0) + "回";
-  }
-  if(document.getElementById("rankW")){
-    const rc = rankCounts.W;
-    document.getElementById("rankW").textContent =
-      "順位: 1位" + (rc[1]||0) + "回 / 2位" + (rc[2]||0) + "回 / 3位" + (rc[3]||0) + "回 / 4位" + (rc[4]||0) + "回";
-  }
-  if(document.getElementById("rankN")){
-    const rc = rankCounts.N;
-    document.getElementById("rankN").textContent =
-      "順位: 1位" + (rc[1]||0) + "回 / 2位" + (rc[2]||0) + "回 / 3位" + (rc[3]||0) + "回 / 4位" + (rc[4]||0) + "回";
-  }
-
-  const historyList = document.getElementById("historyList");
-  historyList.innerHTML = "";
-
-  history.slice().reverse().forEach(function(h, idx){
-    const no = history.length - idx;
-    const div = document.createElement("div");
-    div.className = "row";
-
-    const lineFinal =
-      h.names.E + " " + fmtSigned(h.pts.E) + " / " +
-      h.names.S + " " + fmtSigned(h.pts.S) + " / " +
-      h.names.W + " " + fmtSigned(h.pts.W) + " / " +
-      h.names.N + " " + fmtSigned(h.pts.N);
-
-    const tobiText = describeTobi(h.tobi, h.names);
-
-    const main = document.createElement("div");
-    main.className = "row-main";
-    let html =
-      '<div class="row-title">第 ' + no + ' 半荘</div>' +
-      (h.timestamp ? '<div class="row-line" style="font-size:10px;color:#6b7280;">記録日時: ' + h.timestamp + '</div>' : '') +
-      '<div class="row-line">[最終結果] ' + lineFinal + '</div>';
-    if(tobiText){
-      html += '<div class="row-line">[飛び] ' + tobiText + '</div>';
-    }
-    if(h.comment){
-      html += '<div class="row-comment">※ ' + h.comment + '</div>';
-    }
-    main.innerHTML = html;
-
-    const btns = document.createElement("div");
-    btns.className = "row-buttons";
-
-    const editBtn = document.createElement("button");
-    editBtn.textContent = "編集";
-    editBtn.onclick = function(){ startEdit(idx); };
-
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "削除";
-    delBtn.onclick = function(){ deleteHand(idx); };
-
-    btns.appendChild(editBtn);
-    btns.appendChild(delBtn);
-
-    div.appendChild(main);
-    div.appendChild(btns);
-    historyList.appendChild(div);
-  });
-
-  document.getElementById("calcBtn").textContent =
-    editingIndex === null ? "🀄 計算して記録" : "✔ 修正を反映";
-}
-
-function clearInputArea(){
-  document.getElementById("resE").value = "";
-  document.getElementById("resS").value = "";
-  document.getElementById("resW").value = "";
-  document.getElementById("resN").value = "";
-  document.getElementById("comment").value = "";
-  document.getElementById("tobiWinE").checked = false;
-  document.getElementById("tobiLoseE").checked = false;
-  document.getElementById("tobiWinS").checked = false;
-  document.getElementById("tobiLoseS").checked = false;
-  document.getElementById("tobiWinW").checked = false;
-  document.getElementById("tobiLoseW").checked = false;
-  document.getElementById("tobiWinN").checked = false;
-  document.getElementById("tobiLoseN").checked = false;
-}
-
-// 設定ボタン
-document.getElementById("applySettingsBtn").addEventListener("click", function(){
-  const tWin = Number(document.getElementById("tobiWinInput").value) || 0;
-  const tLose = Number(document.getElementById("tobiLoseInput").value) || 0;
-  settings.tobiWin = tWin;
-  settings.tobiLose = tLose;
-  alert("設定を適用しました");
-});
-
-// 計算して記録 / 修正反映
-document.getElementById("calcBtn").addEventListener("click", function(){
-  const res = {
-    E: Number(document.getElementById("resE").value) || 0,
-    S: Number(document.getElementById("resS").value) || 0,
-    W: Number(document.getElementById("resW").value) || 0,
-    N: Number(document.getElementById("resN").value) || 0
-  };
-
-  const names = {
-    E: document.getElementById("nameE").value || "東",
-    S: document.getElementById("nameS").value || "南",
-    W: document.getElementById("nameW").value || "西",
-    N: document.getElementById("nameN").value || "北"
-  };
-
-  if(res.E === 0 && res.S === 0 && res.W === 0 && res.N === 0){
-    alert("この半荘の結果ポイントを入力してください。");
-    return;
-  }
-
-  const sum = res.E + res.S + res.W + res.N;
-  if(sum !== 0){
-    alert("結果の合計が0になっていません。飛びポイントは自動で加算されるので、結果部分だけで合計0にしてください。");
-    return;
-  }
-
-  const tobi = {
-    E: {
-      win:  document.getElementById("tobiWinE").checked,
-      lose: document.getElementById("tobiLoseE").checked
-    },
-    S: {
-      win:  document.getElementById("tobiWinS").checked,
-      lose: document.getElementById("tobiLoseS").checked
-    },
-    W: {
-      win:  document.getElementById("tobiWinW").checked,
-      lose: document.getElementById("tobiLoseW").checked
-    },
-    N: {
-      win:  document.getElementById("tobiWinN").checked,
-      lose: document.getElementById("tobiLoseN").checked
-    }
-  };
-
-  // 飛び込み後ポイント（= 最終結果）
-  const pts = {E:res.E, S:res.S, W:res.W, N:res.N};
-
-  // 「飛ばされた」人数をカウント（1人が複数人同時に飛ばした場合などに対応）
-  const losers = ["E","S","W","N"].filter(function(w){ return tobi[w].lose; });
-  const losersCount = losers.length;
-
-  ["E","S","W","N"].forEach(function(w){
-    var flag = tobi[w];
-    if(!flag) return;
-    // 飛ばした人には「飛ばした人数 × ボーナス」を加算
-    if(flag.win && losersCount > 0){
-      pts[w] += settings.tobiWin * losersCount;
-    }
-    // 飛ばされた人には1人分のペナルティをそれぞれ加算
-    if(flag.lose){
-      pts[w] += settings.tobiLose;
-    }
-  });
-
-  const comment = document.getElementById("comment").value;
-  const now = new Date();
-  const entry = { res: res, pts: pts, names: names, comment: comment, tobi: tobi, timestamp: formatTimestampJP(now) };
-
-  if(editingIndex === null){
-    history.push(entry);
-  }else{
-    history[editingIndex] = entry;
-    editingIndex = null;
-  }
-
-  saveHistoryYonma();
-  clearInputArea();
-  updateDOM();
-});
-
-// 編集開始
-function startEdit(index){
-  const h = history[index];
-  editingIndex = index;
-
-  document.getElementById("resE").value = h.res.E;
-  document.getElementById("resS").value = h.res.S;
-  document.getElementById("resW").value = h.res.W;
-  document.getElementById("resN").value = h.res.N;
-  document.getElementById("comment").value = h.comment || "";
-
-  document.getElementById("tobiWinE").checked = !!h.tobi.E.win;
-  document.getElementById("tobiLoseE").checked = !!h.tobi.E.lose;
-  document.getElementById("tobiWinS").checked = !!h.tobi.S.win;
-  document.getElementById("tobiLoseS").checked = !!h.tobi.S.lose;
-  document.getElementById("tobiWinW").checked = !!h.tobi.W.win;
-  document.getElementById("tobiLoseW").checked = !!h.tobi.W.lose;
-  document.getElementById("tobiWinN").checked = !!h.tobi.N.win;
-  document.getElementById("tobiLoseN").checked = !!h.tobi.N.lose;
-
-  updateDOM();
-}
-
-// 削除
-function deleteHand(index){
-  if(!confirm("この半荘を削除しますか？")) return;
-  history.splice(index,1);
-  editingIndex = null;
-  saveHistoryYonma();
-  updateDOM();
-}
-
-// 全リセット
-document.getElementById("resetBtn").addEventListener("click", function(){
-  if(!confirm("全ての履歴と合計をリセットしますか？")) return;
-  history = [];
-  editingIndex = null;
-  clearInputArea();
-  saveHistoryYonma();
-  updateDOM();
-});
-
-// CSV出力（最終結果ベース）
-document.getElementById("downloadCsv").addEventListener("click", function(){
-  let csv = "半荘,東最終結果,南最終結果,西最終結果,北最終結果,東飛ばし,東被飛ばし,南飛ばし,南被飛ばし,西飛ばし,西被飛ばし,北飛ばし,北被飛ばし,コメント\n";
-  history.forEach(function(h,i){
-    const safeComment = (h.comment || "").replace(/,/g," ");
-    csv +=
-      (i+1) + "," +
-      h.pts.E + "," + h.pts.S + "," + h.pts.W + "," + h.pts.N + "," +
-      (h.tobi.E.win ? 1 : 0) + "," + (h.tobi.E.lose ? 1 : 0) + "," +
-      (h.tobi.S.win ? 1 : 0) + "," + (h.tobi.S.lose ? 1 : 0) + "," +
-      (h.tobi.W.win ? 1 : 0) + "," + (h.tobi.W.lose ? 1 : 0) + "," +
-      (h.tobi.N.win ? 1 : 0) + "," + (h.tobi.N.lose ? 1 : 0) + "," +
-      safeComment + "\n";
-  });
-  const blob = new Blob([csv], {type:"text/csv"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "yonma_result_tobi_final_history_multitobi.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-});
-
-
-// CSV読み込み（バックアップ復元：最終結果ベース）
-document.getElementById("uploadCsvBtn").addEventListener("click", function(){
-  document.getElementById("uploadCsv").click();
-});
-
-document.getElementById("uploadCsv").addEventListener("change", function(e){
-  const file = e.target.files[0];
-  if(!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function(ev){
-    try{
-      importCsvYonma(ev.target.result);
-      alert("CSVから履歴を復元しました。");
-    }catch(err){
-      console.error(err);
-      alert("CSVの読み込みでエラーが発生しました。フォーマットを確認してください。");
-    }
-  };
-  reader.readAsText(file);
-  e.target.value = "";
-});
-
-function importCsvYonma(text){
-  const lines = text.trim().split(/\r?\n/);
-  if(lines.length <= 1){
-    alert("データ行がありません。");
-    return;
-  }
-
-  const header = lines[0].split(",");
-  if(header.length < 14){
-    throw new Error("ヘッダ列数が想定より少ないです。");
-  }
-
-  const names = {
-    E: document.getElementById("nameE").value || "東",
-    S: document.getElementById("nameS").value || "南",
-    W: document.getElementById("nameW").value || "西",
-    N: document.getElementById("nameN").value || "北"
-  };
-
-  history = [];
-  editingIndex = null;
-
-  for(let i = 1; i < lines.length; i++){
-    const line = lines[i].trim();
-    if(!line) continue;
-
-    const cols = line.split(",");
-    if(cols.length < 14) continue;
-
-    const pts = {
-      E: Number(cols[1]) || 0,
-      S: Number(cols[2]) || 0,
-      W: Number(cols[3]) || 0,
-      N: Number(cols[4]) || 0
-    };
-
-    const tobi = {
-      E: { win: cols[5] === "1",  lose: cols[6] === "1"  },
-      S: { win: cols[7] === "1",  lose: cols[8] === "1"  },
-      W: { win: cols[9] === "1",  lose: cols[10] === "1" },
-      N: { win: cols[11] === "1", lose: cols[12] === "1" }
-    };
-
-    const comment = cols.slice(13).join(",");
-
-    const res = {E: pts.E, S: pts.S, W: pts.W, N: pts.N};
-
-    history.push({
-      res: res,
-      pts: pts,
-      names: { ...names },
-      comment: comment,
-      tobi: tobi
-    });
-  }
-
-  updateDOM();
-}
-
-// LINE共有（累計のみ）
-document.getElementById("shareLineBtn").addEventListener("click", async function(){
-  if(history.length === 0){
-    alert("まずは1半荘以上の結果を記録してください。");
-    return;
-  }
-  const totals = computeTotals();
-  const nameE2 = document.getElementById("nameE").value || "東";
-  const nameS2 = document.getElementById("nameS").value || "南";
-  const nameW2 = document.getElementById("nameW").value || "西";
-  const nameN2 = document.getElementById("nameN").value || "北";
-
-  // 累計順位カウント（LINE共有用：四麻）
-  const rankCounts = {
-    E: {1:0,2:0,3:0,4:0},
-    S: {1:0,2:0,3:0,4:0},
-    W: {1:0,2:0,3:0,4:0},
-    N: {1:0,2:0,3:0,4:0}
-  };
-  history.forEach(function(h){
-    const arr = [
-      {w:"E", v:h.pts.E},
-      {w:"S", v:h.pts.S},
-      {w:"W", v:h.pts.W},
-      {w:"N", v:h.pts.N}
-    ];
-    arr.sort(function(a,b){ return b.v - a.v; });
-    let prevVal = null;
-    let currentRank = 1;
-    arr.forEach(function(item, idx){
-      if(prevVal !== null && item.v < prevVal){
-        currentRank = idx + 1;
-      }
-      rankCounts[item.w][currentRank] += 1;
-      prevVal = item.v;
-    });
-  });
-
-  function formatRank(rc){
-    return "1位" + (rc[1]||0) + "回、2位" + (rc[2]||0) + "回、3位" + (rc[3]||0) + "回、4位" + (rc[4]||0) + "回";
-  }
-
-  const lines = [];
-  lines.push("【四人麻雀 累計スコア】");
-  lines.push("半荘数: " + history.length);
-  lines.push("");
-  lines.push(nameE2 + " " + fmtSigned(totals.E));
-  lines.push(nameS2 + " " + fmtSigned(totals.S));
-  lines.push(nameW2 + " " + fmtSigned(totals.W));
-  lines.push(nameN2 + " " + fmtSigned(totals.N));
-  lines.push("");
-  lines.push("【順位内訳】");
-  lines.push(nameE2 + " : " + formatRank(rankCounts.E));
-  lines.push(nameS2 + " : " + formatRank(rankCounts.S));
-  lines.push(nameW2 + " : " + formatRank(rankCounts.W));
-  lines.push(nameN2 + " : " + formatRank(rankCounts.N));
-
-  const text = lines.join("\n");
-
-  if (navigator.share) {
-    try{
-      await navigator.share({ text });
-      return;
-    }catch(e){
-      console.log(e);
-    }
-  }
-
-  const encoded = encodeURIComponent(text);
-  const url = "https://line.me/R/msg/text/?" + encoded;
-  window.open(url, "_blank");
-});
-
-updateDOM();
-
-// 累計グラフ（ヨンマ）
 let scoreChart = null;
 
-function buildGraphDataYonma(){
-  const labels = [];
-  const cum = {E:0,S:0,W:0,N:0};
-  const series = {E:[],S:[],W:[],N:[]};
-
-  history.forEach(function(h, idx){
-    labels.push("第" + (idx+1) + "半荘");
-    cum.E += h.pts.E;
-    cum.S += h.pts.S;
-    cum.W += h.pts.W;
-    cum.N += h.pts.N;
-    series.E.push(cum.E);
-    series.S.push(cum.S);
-    series.W.push(cum.W);
-    series.N.push(cum.N);
-  });
-
-  const lastNames = history.length
-    ? history[history.length-1].names
-    : {
-        E: document.getElementById("nameE").value || "プレイヤー①",
-        S: document.getElementById("nameS").value || "プレイヤー②",
-        W: document.getElementById("nameW").value || "プレイヤー③",
-        N: document.getElementById("nameN").value || "プレイヤー④"
-      };
-
-  return {
-    labels: labels,
-    datasets: [
-      {
-        label: lastNames.E,
-        data: series.E,
-        tension: 0.2
-      },
-      {
-        label: lastNames.S,
-        data: series.S,
-        tension: 0.2
-      },
-      {
-        label: lastNames.W,
-        data: series.W,
-        tension: 0.2
-      },
-      {
-        label: lastNames.N,
-        data: series.N,
-        tension: 0.2
-      }
-    ]
-  };
-}
-
-function openGraphModalYonma(){
-  if(history.length === 0){
-    alert("まずは1半荘以上の結果を記録してください。");
-    return;
-  }
-  const m = document.getElementById("graphModal");
-  m.style.display = "flex";
-
-  const ctx = document.getElementById("scoreChart").getContext("2d");
-  if(scoreChart){
-    scoreChart.destroy();
-  }
-
-  const data = buildGraphDataYonma();
-  scoreChart = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: data.labels,
-      datasets: data.datasets
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          display: true
-        }
-      },
-      scales: {
-        x: {
-          title: {
-            display: true,
-            text: "半荘"
-          }
-        },
-        y: {
-          title: {
-            display: true,
-            text: "累計ポイント"
-          },
-          ticks: {
-            stepSize: 10
-          }
-        }
-      }
-    }
-  });
-}
-
-document.getElementById("showGraphBtn").addEventListener("click", openGraphModalYonma);
-document.getElementById("graphCloseBtn").addEventListener("click", function(){
-  document.getElementById("graphModal").style.display = "none";
-});
-document.getElementById("graphModal").addEventListener("click", function(e){
-  if(e.target.id === "graphModal"){
-    document.getElementById("graphModal").style.display = "none";
-  }
-});
-
+function el(id){ return document.getElementById(id); }
+function getNames(){ return { E: el("nameE").value || "東", S: el("nameS").value || "南", W: el("nameW").value || "西", N: el("nameN").value || "北" }; }
+function saveNames(){ localStorage.setItem(STORAGE_KEY_NAMES, JSON.stringify(getNames())); updateChipLabels(); updateDOM(); }
+function saveHistory(){ localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history)); }
+function saveRate(){ localStorage.setItem(STORAGE_KEY_RATE, el("rateInput").value || ""); }
+function getChipSettings(){ return { value:Number(el("chipValueInput").value)||0, chips:{ E:Number(el("chipEInput").value)||0, S:Number(el("chipSInput").value)||0, W:Number(el("chipWInput").value)||0, N:Number(el("chipNInput").value)||0 } }; }
+function saveChips(){ const c={ value:el("chipValueInput").value||"", E:el("chipEInput").value||"", S:el("chipSInput").value||"", W:el("chipWInput").value||"", N:el("chipNInput").value||"" }; localStorage.setItem(STORAGE_KEY_CHIPS, JSON.stringify(c)); }
+function updateChipLabels(){ const names=getNames(); WINDS.forEach(w=>{ const label=el("chip"+w+"Label"); if(label) label.textContent = names[w] + "のチップ枚数"; }); }
+function formatTimestampJP(dt){ const pad=n=>(n<10?"0":"")+n; return dt.getFullYear()+"/"+pad(dt.getMonth()+1)+"/"+pad(dt.getDate())+" "+pad(dt.getHours())+":"+pad(dt.getMinutes()); }
+function fmtSigned(n){ n=Number(n)||0; return n>0 ? "+"+n : String(n); }
+function fmtYen(n){ n=Math.round(Number(n)||0); return (n>0?"+":"") + n.toLocaleString("ja-JP") + "円"; }
+function computeTotals(){ const t={E:0,S:0,W:0,N:0}; history.forEach(h=>WINDS.forEach(w=>t[w]+=Number(h.pts?.[w])||0)); return t; }
+function computeRankCounts(){ const rc={E:{1:0,2:0,3:0,4:0},S:{1:0,2:0,3:0,4:0},W:{1:0,2:0,3:0,4:0},N:{1:0,2:0,3:0,4:0}}; history.forEach(h=>{ const arr=WINDS.map(w=>({w,v:Number(h.pts?.[w])||0})).sort((a,b)=>b.v-a.v); let prev=null, rank=1; arr.forEach((item,idx)=>{ if(prev!==null && item.v<prev) rank=idx+1; rc[item.w][rank]++; prev=item.v; }); }); return rc; }
+function rankText(rc){ return "1位"+(rc[1]||0)+"回 / 2位"+(rc[2]||0)+"回 / 3位"+(rc[3]||0)+"回 / 4位"+(rc[4]||0)+"回"; }
+function scoreInputs(){ return {E:el("resE"),S:el("resS"),W:el("resW"),N:el("resN")}; }
+function applyAutoCalculation(){ const inputs=scoreInputs(); WINDS.forEach(w=>{ if(inputs[w].dataset.auto==="1") inputs[w].value=""; inputs[w].dataset.auto=""; inputs[w].classList.remove("auto-calculated"); }); const filled=WINDS.filter(w=>inputs[w].value.trim()!==""); if(filled.length===3){ const empty=WINDS.find(w=>inputs[w].value.trim()===""); const sum=filled.reduce((a,w)=>a+(Number(inputs[w].value)||0),0); inputs[empty].value = -sum; inputs[empty].dataset.auto="1"; inputs[empty].classList.add("auto-calculated"); } }
+function readScores(){ applyAutoCalculation(); const inputs=scoreInputs(); const filled=WINDS.filter(w=>inputs[w].value.trim()!==""); if(filled.length===0) throw new Error("この半荘の結果ポイントを入力してください。"); if(filled.length<4) throw new Error("3人分まで入力すると残り1人を自動計算します。最低3人分を入力してください。"); const res={}; WINDS.forEach(w=>res[w]=Number(inputs[w].value)||0); const sum=WINDS.reduce((a,w)=>a+res[w],0); if(sum!==0) throw new Error("結果の合計が0になっていません。3人分だけ入力すると4人目は自動計算されます。全員入力する場合は合計0にしてください。"); return res; }
+function buildSettlementHtml(){ const rate=Number(el("rateInput").value); if(!Number.isFinite(rate)||rate<=0) return {ok:false, html:""}; const totals=computeTotals(), names=getNames(), chip=getChipSettings(), chipEnabled=chip.value>0; const rows=WINDS.map(w=>{ const pointYen=totals[w]*rate; const chipYen=chipEnabled?chip.chips[w]*chip.value:0; const totalYen=pointYen+chipYen; const chipText=chipEnabled?' / チップ '+fmtSigned(chip.chips[w])+'枚 = '+fmtYen(chipYen):''; return '<div class="result-line">'+names[w]+'：'+totals[w]+'pt = '+fmtYen(pointYen)+chipText+' → <strong>'+fmtYen(totalYen)+'</strong></div>'; }).join(""); const note=chipEnabled?'<div class="result-line" style="font-size:11px;color:#6b7280;margin-top:4px;">※チップ1枚='+fmtYen(chip.value).replace(/^\+/,"")+'で計算</div>':''; return {ok:true,html:rows+note,rate,chip}; }
+function showSettlement(){ saveRate(); saveChips(); const box=el("settlementResult"); const result=buildSettlementHtml(); if(!result.ok){ alert("レートを入力してください。"); return; } box.innerHTML=result.html; box.classList.add("show"); }
+function updateDOM(){ const totals=computeTotals(), names=getNames(), rc=computeRankCounts(); WINDS.forEach(w=>{ el("total"+w).textContent=names[w]+": "+totals[w]; const totalEl=el("total"+w); totalEl.style.color=totals[w]>0?"#007bff":totals[w]<0?"#ff3333":"#000000"; el("rank"+w).textContent="順位: "+rankText(rc[w]); }); const list=el("historyList"); list.innerHTML=""; history.slice().reverse().forEach((h,idx)=>{ const realIndex=history.length-1-idx, no=history.length-idx; const div=document.createElement("div"); div.className="row"; const namesH=h.names||DEFAULT_NAMES; const line=WINDS.map(w=>(namesH[w]||DEFAULT_NAMES[w])+" "+fmtSigned(h.pts?.[w]||0)).join(" / "); const main=document.createElement("div"); main.className="row-main"; let html='<div class="row-title">第 '+no+' 半荘</div>'+(h.timestamp?'<div class="row-line" style="font-size:10px;color:#6b7280;">記録日時: '+h.timestamp+'</div>':'')+'<div class="row-line">[結果] '+line+'</div>'; if(h.comment) html+='<div class="row-comment">※ '+h.comment+'</div>'; main.innerHTML=html; const btns=document.createElement("div"); btns.className="row-buttons"; const edit=document.createElement("button"); edit.textContent="編集"; edit.onclick=()=>startEdit(realIndex); const del=document.createElement("button"); del.textContent="削除"; del.onclick=()=>deleteHand(realIndex); btns.appendChild(edit); btns.appendChild(del); div.appendChild(main); div.appendChild(btns); list.appendChild(div); }); el("calcBtn").textContent=editingIndex===null?"🀄 計算して記録":"✔ 修正を反映"; updateChipLabels(); }
+function normalizeLoadedHistory(arr){ if(!Array.isArray(arr)) return []; return arr.map(h=>h&&h.pts?{ res:{E:Number(h.res?.E??h.pts.E??0),S:Number(h.res?.S??h.pts.S??0),W:Number(h.res?.W??h.pts.W??0),N:Number(h.res?.N??h.pts.N??0)}, pts:{E:Number(h.pts.E??0),S:Number(h.pts.S??0),W:Number(h.pts.W??0),N:Number(h.pts.N??0)}, names:{E:h.names?.E||"東",S:h.names?.S||"南",W:h.names?.W||"西",N:h.names?.N||"北"}, comment:h.comment||"", timestamp:h.timestamp||""}:null).filter(Boolean); }
+function clearInputArea(){ WINDS.forEach(w=>{ const i=el("res"+w); i.value=""; i.dataset.auto=""; i.classList.remove("auto-calculated"); }); el("comment").value=""; el("settlementResult").classList.remove("show"); el("settlementResult").innerHTML=""; }
+function recordHand(){ let res; try{ res=readScores(); }catch(e){ alert(e.message); return; } const entry={res:{...res},pts:{...res},names:getNames(),comment:el("comment").value||"",timestamp:formatTimestampJP(new Date())}; if(editingIndex===null) history.push(entry); else { history[editingIndex]=entry; editingIndex=null; } saveHistory(); clearInputArea(); updateDOM(); }
+function startEdit(index){ const h=history[index]; editingIndex=index; WINDS.forEach(w=>el("res"+w).value=h.res?.[w]??h.pts?.[w]??0); el("comment").value=h.comment||""; applyAutoCalculation(); updateDOM(); }
+function deleteHand(index){ if(!confirm("この半荘を削除しますか？")) return; history.splice(index,1); editingIndex=null; saveHistory(); updateDOM(); }
+function resetAll(){ if(!confirm("全ての履歴と合計をリセットしますか？")) return; history=[]; editingIndex=null; clearInputArea(); saveHistory(); updateDOM(); }
+function exportCSV(){ let csv="半荘,東結果,南結果,西結果,北結果,コメント,記録日時\n"; history.forEach((h,i)=>{ const comment='"'+String(h.comment||"").replace(/"/g,'""')+'"'; const ts='"'+String(h.timestamp||"").replace(/"/g,'""')+'"'; csv += [i+1,h.pts.E,h.pts.S,h.pts.W,h.pts.N,comment,ts].join(",")+"\n"; }); const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="yonma_score_history.csv"; a.click(); URL.revokeObjectURL(url); }
+function parseCsvLine(line){ const r=[]; let cur="", q=false; for(let i=0;i<line.length;i++){ const ch=line[i]; if(ch==='"'){ if(q&&line[i+1]==='"'){cur+='"'; i++;} else q=!q; } else if(ch===','&&!q){ r.push(cur); cur=""; } else cur+=ch; } r.push(cur); return r; }
+function importCSVText(text){ const lines=text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n").filter(l=>l.trim()!==""); if(lines.length<=1) throw new Error("CSVにデータがありません。"); const header=parseCsvLine(lines[0]); const isNew=header.includes("東結果")&&header.includes("北結果"); const isOld=header.includes("東最終結果")&&header.includes("北最終結果"); if(!isNew&&!isOld) throw new Error("対応していないCSV形式です。"); const imported=[]; for(let i=1;i<lines.length;i++){ const row=parseCsvLine(lines[i]); imported.push({res:{E:Number(row[1]||0),S:Number(row[2]||0),W:Number(row[3]||0),N:Number(row[4]||0)},pts:{E:Number(row[1]||0),S:Number(row[2]||0),W:Number(row[3]||0),N:Number(row[4]||0)},names:getNames(),comment:isNew?(row[5]||""):(row[row.length-1]||""),timestamp:isNew?(row[6]||""):""}); } history=imported; editingIndex=null; saveHistory(); updateDOM(); }
+function shareLine(){ if(history.length===0){ alert("まずは1半荘以上の結果を記録してください。"); return; } const names=getNames(), totals=computeTotals(), rc=computeRankCounts(); let text="【四人麻雀 累計ポイント】\n"+`半荘数: ${history.length}回\n`+WINDS.map(w=>`${names[w]}: ${totals[w]}`).join("\n"); text += "\n\n【順位内訳】\n"+WINDS.map(w=>`${names[w]}: ${rankText(rc[w])}`).join("\n"); const settlement=buildSettlementHtml(); if(settlement.ok){ const rate=Number(el("rateInput").value), chip=getChipSettings(), chipEnabled=chip.value>0; text += `\n\n【精算（${rate}円/pt${chipEnabled ? `・チップ1枚${Math.round(chip.value).toLocaleString("ja-JP")}円` : ""}）】`; WINDS.forEach(w=>{ const pointYen=totals[w]*rate, chipYen=chipEnabled?chip.chips[w]*chip.value:0, totalYen=pointYen+chipYen; text += `\n${names[w]}: ${fmtYen(totalYen)}`; if(chipEnabled) text += `（点数${fmtYen(pointYen)} / チップ${fmtSigned(chip.chips[w])}枚 ${fmtYen(chipYen)}）`; }); } window.open("https://line.me/R/msg/text/?"+encodeURIComponent(text),"_blank"); }
+function showGraph(){ const modal=el("graphModal"); modal.style.display="flex"; const labels=["開始"], data={E:[0],S:[0],W:[0],N:[0]}, sums={E:0,S:0,W:0,N:0}; history.forEach((h,idx)=>{ WINDS.forEach(w=>{ sums[w]+=Number(h.pts?.[w])||0; data[w].push(sums[w]); }); labels.push(String(idx+1)); }); const ctx=el("scoreChart").getContext("2d"); if(scoreChart) scoreChart.destroy(); const names=getNames(); scoreChart=new Chart(ctx,{type:"line",data:{labels,datasets:WINDS.map(w=>({label:names[w],data:data[w],tension:0.25}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true}},scales:{y:{beginAtZero:false}}}}); }
+function loadInitial(){ try{ const saved=localStorage.getItem(STORAGE_KEY_HISTORY)||localStorage.getItem("yonma_history_v1"); if(saved) history=normalizeLoadedHistory(JSON.parse(saved)); }catch(e){ console.error(e); } try{ const n=localStorage.getItem(STORAGE_KEY_NAMES)||localStorage.getItem("yonma_names_v1"); if(n){ const names=JSON.parse(n); WINDS.forEach(w=>{ if(names[w]) el("name"+w).value=names[w]; }); } }catch(e){} const savedRate=localStorage.getItem(STORAGE_KEY_RATE); if(savedRate!==null) el("rateInput").value=savedRate; try{ const chips=localStorage.getItem(STORAGE_KEY_CHIPS); if(chips){ const c=JSON.parse(chips); el("chipValueInput").value=c.value||""; WINDS.forEach(w=>el("chip"+w+"Input").value=c[w]||""); } }catch(e){} updateDOM(); }
+WINDS.forEach(w=>{ el("name"+w).addEventListener("input", saveNames); el("res"+w).addEventListener("input", function(){ if(this.dataset.auto==="1"){ this.dataset.auto=""; this.classList.remove("auto-calculated"); } applyAutoCalculation(); }); });
+el("rateInput").addEventListener("input", saveRate);
+["chipValueInput","chipEInput","chipSInput","chipWInput","chipNInput"].forEach(id=>el(id).addEventListener("input", saveChips));
+el("showSettlementBtn").addEventListener("click", showSettlement);
+el("calcBtn").addEventListener("click", recordHand);
+el("resetBtn").addEventListener("click", resetAll);
+el("shareLineBtn").addEventListener("click", shareLine);
+el("downloadCsv").addEventListener("click", exportCSV);
+el("uploadCsvBtn").addEventListener("click", ()=>el("uploadCsv").click());
+el("uploadCsv").addEventListener("change", function(){ const file=this.files[0]; if(!file) return; const reader=new FileReader(); reader.onload=e=>{ try{ importCSVText(e.target.result); alert("CSVを読み込みました。"); }catch(err){ alert(err.message); } }; reader.readAsText(file,"utf-8"); this.value=""; });
+el("showGraphBtn").addEventListener("click", showGraph);
+el("graphCloseBtn").addEventListener("click", ()=>el("graphModal").style.display="none");
+el("graphModal").addEventListener("click", e=>{ if(e.target===el("graphModal")) el("graphModal").style.display="none"; });
+loadInitial();
 </script>
 </body>
 </html>
