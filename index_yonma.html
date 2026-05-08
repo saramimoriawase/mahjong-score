@@ -431,6 +431,19 @@
       height:320px !important;
     }
 
+    .settlement-toggle-bar{ margin-bottom:8px; }
+    .settlement-toggle-btn{
+      background:#4b5563;
+      color:#fff;
+      box-shadow:0 3px 0 #111827;
+      padding:10px 16px;
+      font-size:14px;
+      min-height:40px;
+      border-radius:999px;
+    }
+    .settlement-panel{ display:none; }
+    .settlement-panel.open{ display:block; }
+
     .rate-box{
       display:grid;
       grid-template-columns:1fr;
@@ -475,7 +488,11 @@
     </div>
 
     <!-- 精算エリア -->
-    <div class="card settlement-card">
+    <div class="settlement-toggle-bar">
+      <button id="toggleSettlementBtn" class="settlement-toggle-btn">精算項目を開く ▼</button>
+    </div>
+
+    <div class="card settlement-card settlement-panel" id="settlementPanel">
 
       <div class="rate-box">
         <div>
@@ -651,6 +668,7 @@ function applyAutoCalculation(){ const inputs=scoreInputs(); WINDS.forEach(w=>{ 
 function readScores(){ applyAutoCalculation(); const inputs=scoreInputs(); const filled=WINDS.filter(w=>inputs[w].value.trim()!==""); if(filled.length===0) throw new Error("この半荘の結果ポイントを入力してください。"); if(filled.length<4) throw new Error("3人分まで入力すると残り1人を自動計算します。最低3人分を入力してください。"); const res={}; WINDS.forEach(w=>res[w]=Number(inputs[w].value)||0); const sum=WINDS.reduce((a,w)=>a+res[w],0); if(sum!==0) throw new Error("結果の合計が0になっていません。3人分だけ入力すると4人目は自動計算されます。全員入力する場合は合計0にしてください。"); return res; }
 function buildSettlementHtml(){ const rate=Number(el("rateInput").value); if(!Number.isFinite(rate)||rate<=0) return {ok:false, html:""}; const totals=computeTotals(), names=getNames(), chip=getChipSettings(), chipEnabled=chip.value>0; const rows=WINDS.map(w=>{ const pointYen=totals[w]*rate; const chipYen=chipEnabled?chip.chips[w]*chip.value:0; const totalYen=pointYen+chipYen; const chipText=chipEnabled?' / チップ '+fmtSigned(chip.chips[w])+'枚 = '+fmtYen(chipYen):''; return '<div class="result-line">'+names[w]+'：'+totals[w]+'pt = '+fmtYen(pointYen)+chipText+' → <strong>'+fmtYen(totalYen)+'</strong></div>'; }).join(""); const note=chipEnabled?'<div class="result-line" style="font-size:11px;color:#6b7280;margin-top:4px;">※チップ1枚='+fmtYen(chip.value).replace(/^\+/,"")+'で計算</div>':''; return {ok:true,html:rows+note,rate,chip}; }
 function showSettlement(){ saveRate(); saveChips(); const box=el("settlementResult"); const result=buildSettlementHtml(); if(!result.ok){ alert("レートを入力してください。"); return; } box.innerHTML=result.html; box.classList.add("show"); }
+function toggleSettlementPanel(){ const panel=el("settlementPanel"), btn=el("toggleSettlementBtn"); const isOpen=panel.classList.toggle("open"); btn.textContent=isOpen?"精算項目を閉じる ▲":"精算項目を開く ▼"; }
 function updateDOM(){ const totals=computeTotals(), names=getNames(), rc=computeRankCounts(); WINDS.forEach(w=>{ el("total"+w).textContent=names[w]+": "+totals[w]; const totalEl=el("total"+w); totalEl.style.color=totals[w]>0?"#007bff":totals[w]<0?"#ff3333":"#000000"; el("rank"+w).textContent="順位: "+rankText(rc[w]); }); const list=el("historyList"); list.innerHTML=""; history.slice().reverse().forEach((h,idx)=>{ const realIndex=history.length-1-idx, no=history.length-idx; const div=document.createElement("div"); div.className="row"; const namesH=h.names||DEFAULT_NAMES; const line=WINDS.map(w=>(namesH[w]||DEFAULT_NAMES[w])+" "+fmtSigned(h.pts?.[w]||0)).join(" / "); const main=document.createElement("div"); main.className="row-main"; let html='<div class="row-title">第 '+no+' 半荘</div>'+(h.timestamp?'<div class="row-line" style="font-size:10px;color:#6b7280;">記録日時: '+h.timestamp+'</div>':'')+'<div class="row-line">[結果] '+line+'</div>'; if(h.comment) html+='<div class="row-comment">※ '+h.comment+'</div>'; main.innerHTML=html; const btns=document.createElement("div"); btns.className="row-buttons"; const edit=document.createElement("button"); edit.textContent="編集"; edit.onclick=()=>startEdit(realIndex); const del=document.createElement("button"); del.textContent="削除"; del.onclick=()=>deleteHand(realIndex); btns.appendChild(edit); btns.appendChild(del); div.appendChild(main); div.appendChild(btns); list.appendChild(div); }); el("calcBtn").textContent=editingIndex===null?"🀄 計算して記録":"✔ 修正を反映"; updateChipLabels(); }
 function normalizeLoadedHistory(arr){ if(!Array.isArray(arr)) return []; return arr.map(h=>h&&h.pts?{ res:{E:Number(h.res?.E??h.pts.E??0),S:Number(h.res?.S??h.pts.S??0),W:Number(h.res?.W??h.pts.W??0),N:Number(h.res?.N??h.pts.N??0)}, pts:{E:Number(h.pts.E??0),S:Number(h.pts.S??0),W:Number(h.pts.W??0),N:Number(h.pts.N??0)}, names:{E:h.names?.E||"東",S:h.names?.S||"南",W:h.names?.W||"西",N:h.names?.N||"北"}, comment:h.comment||"", timestamp:h.timestamp||""}:null).filter(Boolean); }
 function clearInputArea(){ WINDS.forEach(w=>{ const i=el("res"+w); i.value=""; i.dataset.auto=""; i.classList.remove("auto-calculated"); }); el("comment").value=""; el("settlementResult").classList.remove("show"); el("settlementResult").innerHTML=""; }
@@ -667,6 +685,7 @@ function loadInitial(){ try{ const saved=localStorage.getItem(STORAGE_KEY_HISTOR
 WINDS.forEach(w=>{ el("name"+w).addEventListener("input", saveNames); el("res"+w).addEventListener("input", function(){ if(this.dataset.auto==="1"){ this.dataset.auto=""; this.classList.remove("auto-calculated"); } applyAutoCalculation(); }); });
 el("rateInput").addEventListener("input", saveRate);
 ["chipValueInput","chipEInput","chipSInput","chipWInput","chipNInput"].forEach(id=>el(id).addEventListener("input", saveChips));
+el("toggleSettlementBtn").addEventListener("click", toggleSettlementPanel);
 el("showSettlementBtn").addEventListener("click", showSettlement);
 el("calcBtn").addEventListener("click", recordHand);
 el("resetBtn").addEventListener("click", resetAll);
